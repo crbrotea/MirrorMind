@@ -19,7 +19,7 @@ class BreathingPhase:
     action: str          # e.g. "inhale", "hold", "exhale", "deep_inhale"
     duration: float      # seconds
     visual_cue: str      # description of landscape change during this phase
-    instruction: str     # Spanish voice instruction for the agent to speak
+    instruction: str     # Voice instruction for the agent to speak
 
 
 @dataclass(frozen=True)
@@ -42,32 +42,32 @@ class BreathingPattern:
 
 BOX_BREATHING = BreathingPattern(
     technique="box",
-    display_name="Respiracion Cuadrada",
-    description="Cuatro fases iguales de 4 segundos. Equilibra el sistema nervioso.",
+    display_name="Box Breathing",
+    description="Four equal phases of 4 seconds. Balances the nervous system.",
     phases=[
         BreathingPhase(
             action="inhale",
             duration=4.0,
             visual_cue="Scene expands outward, colors brighten gradually, light increases",
-            instruction="Inhala... dos... tres... cuatro...",
+            instruction="Inhale... two... three... four...",
         ),
         BreathingPhase(
             action="hold",
             duration=4.0,
             visual_cue="Scene shimmers at peak brightness, particles of light suspended",
-            instruction="Manten... dos... tres... cuatro...",
+            instruction="Hold... two... three... four...",
         ),
         BreathingPhase(
             action="exhale",
             duration=4.0,
             visual_cue="Scene settles and softens, colors warm, gentle descent",
-            instruction="Exhala... dos... tres... cuatro...",
+            instruction="Exhale... two... three... four...",
         ),
         BreathingPhase(
             action="hold",
             duration=4.0,
             visual_cue="Deep stillness, perfect calm, mirror-like water surface",
-            instruction="Manten... dos... tres... cuatro...",
+            instruction="Hold... two... three... four...",
         ),
     ],
     cycles=4,
@@ -82,26 +82,26 @@ BOX_BREATHING = BreathingPattern(
 
 CALM_BREATHING = BreathingPattern(
     technique="calm",
-    display_name="Respiracion 4-7-8",
-    description="Inhala 4, manten 7, exhala 8. Activa el sistema parasimpatico.",
+    display_name="4-7-8 Breathing",
+    description="Inhale 4, hold 7, exhale 8. Activates the parasympathetic system.",
     phases=[
         BreathingPhase(
             action="inhale",
             duration=4.0,
             visual_cue="Warm light slowly enters the scene from the horizon, gentle glow",
-            instruction="Inhala suavemente... dos... tres... cuatro...",
+            instruction="Inhale gently... two... three... four...",
         ),
         BreathingPhase(
             action="hold",
             duration=7.0,
             visual_cue="Golden glow spreads through the landscape, warmth permeates everything",
-            instruction="Manten el aire... deja que la calma se expanda... tres... cuatro... cinco... seis... siete...",
+            instruction="Hold the air... let the calm expand... three... four... five... six... seven...",
         ),
         BreathingPhase(
             action="exhale",
             duration=8.0,
             visual_cue="Gentle settling like leaves falling, colors deepen into warmth, peace descends",
-            instruction="Exhala lentamente... deja ir todo... tres... cuatro... cinco... seis... siete... ocho...",
+            instruction="Exhale slowly... let it all go... three... four... five... six... seven... eight...",
         ),
     ],
     cycles=3,
@@ -116,29 +116,29 @@ CALM_BREATHING = BreathingPattern(
 
 PHYSIOLOGICAL_SIGH = BreathingPattern(
     technique="physiological_sigh",
-    display_name="Suspiro Fisiologico",
+    display_name="Physiological Sigh",
     description=(
-        "Inhalacion profunda + inhalacion corta extra + exhalacion larga. "
-        "La tecnica de respiracion con mayor evidencia cientifica (Balban et al., 2023)."
+        "Deep inhale + short extra inhale + long exhale. "
+        "The breathing technique with the strongest scientific evidence (Balban et al., 2023)."
     ),
     phases=[
         BreathingPhase(
             action="deep_inhale",
             duration=3.0,
             visual_cue="Scene brightens significantly, expansion in all directions",
-            instruction="Inhala profundo por la nariz... dos... tres...",
+            instruction="Inhale deeply through your nose... two... three...",
         ),
         BreathingPhase(
             action="sharp_inhale",
             duration=1.0,
             visual_cue="Quick additional brightening, slight upward lift effect",
-            instruction="...y un poco mas de aire...",
+            instruction="...and a little more air...",
         ),
         BreathingPhase(
             action="long_exhale",
             duration=6.0,
             visual_cue="Slow gentle descent, colors warm maximally, deep calm settles in",
-            instruction="Exhala largo por la boca... deja salir todo... tres... cuatro... cinco... seis...",
+            instruction="Exhale long through your mouth... let it all out... three... four... five... six...",
         ),
     ],
     cycles=5,

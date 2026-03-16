@@ -20,7 +20,8 @@ import logging
 import time
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, WebSocketState
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocketState
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from google.adk.agents import LiveRequestQueue

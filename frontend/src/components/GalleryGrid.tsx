@@ -30,13 +30,13 @@ export default function GalleryGrid({ entries }: GalleryGridProps) {
             <path d="m21 15-5-5L5 21" />
           </svg>
         </div>
-        <p className="text-white/50 text-sm mb-1">Aun no tienes sesiones</p>
-        <p className="text-white/30 text-xs mb-6">Tus paisajes emocionales apareceran aqui</p>
+        <p className="text-white/50 text-sm mb-1">No sessions yet</p>
+        <p className="text-white/30 text-xs mb-6">Your emotional landscapes will appear here</p>
         <a
           href="/session"
           className="rounded-full bg-white/10 px-6 py-2 text-sm text-white/80 border border-white/10 transition-colors hover:bg-white/15"
         >
-          Comenzar primera sesion
+          Start first session
         </a>
       </div>
     );
@@ -65,7 +65,7 @@ export default function GalleryGrid({ entries }: GalleryGridProps) {
           <button
             className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 border border-white/10 text-white/70 hover:bg-white/20 transition-colors"
             onClick={() => setSelectedEntry(null)}
-            aria-label="Cerrar"
+            aria-label="Close"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -85,7 +85,7 @@ export default function GalleryGrid({ entries }: GalleryGridProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={selectedEntry.finalImageUrl}
-            alt="Paisaje emocional"
+            alt="Emotional landscape"
             className="max-h-[80vh] max-w-full rounded-xl object-contain"
             onClick={(e) => e.stopPropagation()}
           />

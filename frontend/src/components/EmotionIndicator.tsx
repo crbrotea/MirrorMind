@@ -8,13 +8,13 @@ interface EmotionIndicatorProps {
 }
 
 const EMOTION_LABELS: Record<string, string> = {
-  anxiety: 'Ansiedad',
-  sadness: 'Tristeza',
-  anger: 'Enojo',
-  joy: 'Alegria',
-  calm: 'Calma',
-  fear: 'Miedo',
-  hope: 'Esperanza',
+  anxiety: 'Anxiety',
+  sadness: 'Sadness',
+  anger: 'Anger',
+  joy: 'Joy',
+  calm: 'Calm',
+  fear: 'Fear',
+  hope: 'Hope',
   neutral: 'Neutral',
 };
 

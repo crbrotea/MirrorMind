@@ -56,7 +56,7 @@ export default function SessionPage() {
       <main className="relative flex min-h-dvh items-center justify-center bg-[#0a0a1a]">
         <div className="flex flex-col items-center gap-4 animate-fade-in">
           <div className="h-12 w-12 rounded-full border-2 border-white/10 border-t-white/40 animate-spin" />
-          <p className="text-sm text-white/40">Preparando tu espacio...</p>
+          <p className="text-sm text-white/40">Preparing your space...</p>
         </div>
       </main>
     );
@@ -86,22 +86,22 @@ export default function SessionPage() {
               <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <h2 className="text-2xl font-light text-white/90">Sesion completada</h2>
+          <h2 className="text-2xl font-light text-white/90">Session complete</h2>
           <p className="max-w-xs text-sm text-white/40">
-            Tu paisaje emocional ha sido guardado. Recuerda que siempre puedes volver a este espacio.
+            Your emotional landscape has been saved. Remember you can always return to this space.
           </p>
           <div className="flex gap-3">
             <button
               onClick={() => router.push('/gallery')}
               className="rounded-full bg-white/10 px-6 py-2.5 text-sm text-white/80 border border-white/10 transition-colors hover:bg-white/15"
             >
-              Ver galeria
+              View gallery
             </button>
             <button
               onClick={() => router.push('/')}
               className="rounded-full bg-white/5 px-6 py-2.5 text-sm text-white/50 border border-white/5 transition-colors hover:bg-white/10"
             >
-              Inicio
+              Home
             </button>
           </div>
         </div>

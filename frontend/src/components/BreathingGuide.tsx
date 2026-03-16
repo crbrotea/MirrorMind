@@ -8,10 +8,10 @@ interface BreathingGuideProps {
 }
 
 const PHASE_LABELS: Record<string, string> = {
-  inhale: 'Inhala',
-  hold: 'Manten',
-  exhale: 'Exhala',
-  rest: 'Descansa',
+  inhale: 'Inhale',
+  hold: 'Hold',
+  exhale: 'Exhale',
+  rest: 'Rest',
 };
 
 export default function BreathingGuide({ pattern }: BreathingGuideProps) {
@@ -64,10 +64,10 @@ export default function BreathingGuide({ pattern }: BreathingGuideProps) {
             <p className="text-lg font-light text-white/90 tracking-wider">{label}</p>
             <p className="mt-1 text-xs text-white/50">
               {pattern.technique === 'box'
-                ? 'Respiracion cuadrada'
+                ? 'Box breathing'
                 : pattern.technique === 'calm'
-                  ? 'Respiracion calmante'
-                  : 'Suspiro fisiologico'}
+                  ? 'Calm breathing'
+                  : 'Physiological sigh'}
             </p>
           </div>
         </div>

@@ -44,11 +44,11 @@ export const EMOTION_COLORS: EmotionColors = {
 };
 
 export const STAGE_LABELS: Record<string, string> = {
-  welcome: 'Bienvenida',
-  mirror: 'Espejo',
-  shift: 'Transformacion',
-  arrive: 'Llegada',
-  complete: 'Completo',
+  welcome: 'Welcome',
+  mirror: 'Mirror',
+  shift: 'Transformation',
+  arrive: 'Arrival',
+  complete: 'Complete',
 };
 
 export const STAGE_ORDER = ['welcome', 'mirror', 'shift', 'arrive', 'complete'] as const;

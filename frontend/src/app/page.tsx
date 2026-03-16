@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function LandingPage() {
@@ -25,21 +26,15 @@ export default function LandingPage() {
       {/* Content */}
       <div className="flex flex-col items-center text-center animate-float-up">
         {/* Logo mark */}
-        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-10 w-10 text-white/60"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-            <path d="M2 12h20" />
-          </svg>
+        <div className="mb-8">
+          <Image
+            src="/icon-192.png"
+            alt="MirrorMind"
+            width={80}
+            height={80}
+            className="drop-shadow-[0_0_20px_rgba(100,100,255,0.15)]"
+            priority
+          />
         </div>
 
         {/* Title */}
@@ -49,13 +44,13 @@ export default function LandingPage() {
 
         {/* Tagline */}
         <p className="mb-6 text-lg font-light tracking-wide text-white/50">
-          Tu espejo emocional
+          Your Emotional Mirror
         </p>
 
         {/* Description */}
         <p className="mb-12 max-w-sm text-sm leading-relaxed text-white/35">
-          Habla y observa como tus emociones se transforman en paisajes vivos.
-          MirrorMind escucha, refleja y te guia hacia donde quieres llegar.
+          Speak and watch your emotions transform into living landscapes.
+          MirrorMind listens, reflects, and guides you to where you want to be.
         </p>
 
         {/* CTA */}
@@ -63,7 +58,7 @@ export default function LandingPage() {
           href="/session"
           className="group relative overflow-hidden rounded-full border border-white/15 bg-white/10 px-10 py-3.5 text-sm font-medium tracking-wide text-white/90 backdrop-blur-md transition-all duration-300 hover:bg-white/15 hover:border-white/25 hover:shadow-[0_0_30px_rgba(255,255,255,0.08)]"
         >
-          <span className="relative z-10">Comenzar</span>
+          <span className="relative z-10">Begin</span>
           <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] transition-transform duration-700 group-hover:translate-x-[200%]" />
         </Link>
 
@@ -72,13 +67,13 @@ export default function LandingPage() {
           href="/gallery"
           className="mt-6 text-xs text-white/25 transition-colors hover:text-white/45"
         >
-          Ver galeria de sesiones
+          View session gallery
         </Link>
       </div>
 
       {/* Bottom subtle text */}
       <p className="absolute bottom-6 text-[10px] text-white/15 tracking-widest uppercase">
-        Respira profundo. Comienza aqui.
+        Take a deep breath. Start here.
       </p>
     </main>
   );

@@ -41,7 +41,7 @@ export default function SessionHeader({
       <Link
         href="/"
         className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 backdrop-blur-md border border-white/10 transition-colors hover:bg-white/10"
-        aria-label="Volver al inicio"
+        aria-label="Back to home"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -83,7 +83,7 @@ export default function SessionHeader({
       <button
         onClick={onEndSession}
         className="flex h-10 items-center gap-1.5 rounded-full bg-white/5 px-3 backdrop-blur-md border border-white/10 transition-colors hover:bg-white/10"
-        aria-label="Terminar sesion"
+        aria-label="End session"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -98,7 +98,7 @@ export default function SessionHeader({
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <rect x="8" y="8" width="8" height="8" rx="1" fill="currentColor" />
         </svg>
-        <span className="text-xs text-white/60 hidden sm:inline">Terminar</span>
+        <span className="text-xs text-white/60 hidden sm:inline">End</span>
       </button>
     </div>
   );

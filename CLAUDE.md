@@ -58,7 +58,7 @@ cd backend && uvicorn main:app --reload --port 8080  # Dev server on :8080
 ## Language
 
 - Code, comments, documentation: **English**
-- User-facing content (UI, prompts, agent speech): **Spanish**
+- User-facing content (UI, prompts, agent speech): **English**
 
 ## NO ACCEDER A SERVICIOS DE OWQLO
 - PREGUNTAR SIEMPRE ante la duda
