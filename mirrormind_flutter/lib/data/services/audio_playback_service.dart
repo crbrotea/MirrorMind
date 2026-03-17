@@ -5,11 +5,10 @@ import 'package:flutter_sound/flutter_sound.dart';
 /// Plays back PCM16 audio streamed from the MirrorMind backend.
 ///
 /// Uses `flutter_sound` to play 24 kHz mono PCM16 audio in real time via
-/// a streaming sink.
+/// [feedFromStream].
 class AudioPlaybackService {
   final FlutterSoundPlayer _player = FlutterSoundPlayer();
   bool _isInitialized = false;
-  StreamSink? _sink;
 
   /// Initializes the audio player and opens a streaming session.
   ///
@@ -17,7 +16,7 @@ class AudioPlaybackService {
   /// at 24 kHz mono output.
   Future<void> init() async {
     await _player.openPlayer();
-    _sink = await _player.startPlayerFromStream(
+    await _player.startPlayerFromStream(
       codec: Codec.pcm16,
       sampleRate: 24000,
       numChannels: 1,
@@ -29,15 +28,14 @@ class AudioPlaybackService {
 
   /// Feeds a chunk of PCM16 audio data to the player for immediate playback.
   Future<void> playChunk(List<int> pcmData) async {
-    if (!_isInitialized || _sink == null) return;
-    _sink!.add(Uint8List.fromList(pcmData));
+    if (!_isInitialized) return;
+    await _player.feedUint8FromStream(Uint8List.fromList(pcmData));
   }
 
   /// Stops the current playback stream.
   Future<void> stop() async {
     if (!_isInitialized) return;
     await _player.stopPlayer();
-    _sink = null;
     _isInitialized = false;
   }
 
@@ -46,7 +44,6 @@ class AudioPlaybackService {
     if (_isInitialized) {
       await _player.stopPlayer();
     }
-    _sink = null;
     await _player.closePlayer();
     _isInitialized = false;
   }
