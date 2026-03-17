@@ -20,6 +20,25 @@ from mirror_mind.config import GOOGLE_API_KEY, IMAGE_MODEL, IMAGE_ASPECT_RATIO, 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
+# Image delivery queue: tool puts images here, WebSocket send loop reads them.
+# Keyed by user_id so each connection gets its own queue.
+# ---------------------------------------------------------------------------
+_image_queues: dict[str, asyncio.Queue] = {}
+
+
+def get_image_queue(user_id: str) -> asyncio.Queue:
+    """Get or create the image delivery queue for a user."""
+    if user_id not in _image_queues:
+        _image_queues[user_id] = asyncio.Queue()
+    return _image_queues[user_id]
+
+
+def remove_image_queue(user_id: str) -> None:
+    """Clean up image queue on disconnect."""
+    _image_queues.pop(user_id, None)
+
+
+# ---------------------------------------------------------------------------
 # Module-level image client (separate from the ADK/Live API client)
 # ---------------------------------------------------------------------------
 _image_client: genai.Client | None = None

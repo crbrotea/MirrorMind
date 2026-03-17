@@ -20,9 +20,16 @@ from mirror_mind.image_service import close_session as close_image_session
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Module-level session service (shared by the runner)
+# Module-level session service — set by main.py from the runner's own service
+# so that sessions created here are visible to the ADK runner.
 # ---------------------------------------------------------------------------
-session_service = InMemorySessionService()
+session_service: InMemorySessionService | None = None
+
+
+def set_session_service(svc: InMemorySessionService) -> None:
+    """Inject the runner's session service so we share a single instance."""
+    global session_service
+    session_service = svc
 
 
 @dataclass

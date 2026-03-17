@@ -44,9 +44,11 @@ from mirror_mind.session_manager import (
     get_session_metadata,
     record_emotion,
     record_image_generated,
+    set_session_service,
     update_activity,
 )
 from mirror_mind.gallery_service import save_session as save_gallery_session
+from mirror_mind.image_service import get_image_queue, remove_image_queue
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -78,6 +80,9 @@ app.add_middleware(
 # ADK runner (shared across all connections)
 # ---------------------------------------------------------------------------
 runner = InMemoryRunner(app_name=APP_NAME, agent=root_agent)
+
+# Share the runner's session service with our session manager
+set_session_service(runner.session_service)
 
 
 # ---------------------------------------------------------------------------
@@ -135,8 +140,6 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
         run_config=run_config,
     )
 
-    # Track the previous state to detect changes
-    last_image_check: str | None = None
     last_stage: str | None = "welcome"
     last_emotion: str | None = "neutral"
 
@@ -192,7 +195,7 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
     # ------------------------------------------------------------------
     async def send_to_client() -> None:
         """Forward agent audio, transcripts, and state updates to the browser."""
-        nonlocal last_image_check, last_stage, last_emotion
+        nonlocal last_stage, last_emotion
 
         try:
             async for event in events:
@@ -218,65 +221,7 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
                                 "author": author,
                             })
 
-                # Check session state for updates pushed by tools
-                try:
-                    updated_session = await runner.session_service.get_session(
-                        app_name=APP_NAME,
-                        user_id=user_id,
-                        session_id=session.id,
-                    )
-                except Exception:
-                    continue
-
-                if updated_session is None:
-                    continue
-
-                state = updated_session.state
-
-                # Image update
-                if state.get("image_updated"):
-                    image_b64 = state.get("latest_image")
-                    if image_b64 and image_b64 != last_image_check:
-                        last_image_check = image_b64
-                        await _send_json(ws, {
-                            "type": "image",
-                            "data": image_b64,
-                            "emotion": state.get("latest_image_emotion", ""),
-                            "stage": state.get("latest_image_stage", ""),
-                        })
-                        await record_image_generated(user_id)
-                    state["image_updated"] = False
-
-                # Stage change
-                current_stage = state.get("current_stage", "welcome")
-                if current_stage != last_stage:
-                    last_stage = current_stage
-                    await _send_json(ws, {
-                        "type": "stage_change",
-                        "stage": current_stage,
-                    })
-
-                # Emotion update
-                current_emotion = state.get("current_emotion", "neutral")
-                if current_emotion != last_emotion:
-                    last_emotion = current_emotion
-                    await record_emotion(user_id, current_emotion, current_stage)
-                    await _send_json(ws, {
-                        "type": "emotion_update",
-                        "emotion": current_emotion,
-                        "stage": current_stage,
-                    })
-
-                # Breathing pattern activation
-                active_breathing = state.get("active_breathing")
-                if active_breathing:
-                    from mirror_mind.breathing import get_breathing_pattern
-                    pattern = get_breathing_pattern(active_breathing)
-                    await _send_json(ws, {
-                        "type": "breathing_pattern",
-                        "pattern": pattern,
-                    })
-                    state["active_breathing"] = None
+                # Note: images are delivered via the dedicated deliver_images loop
 
         except WebSocketDisconnect:
             logger.info("Client disconnected (send loop): %s", user_id)
@@ -284,12 +229,33 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
             logger.error("Error in send loop for %s: %s", user_id, e)
 
     # ------------------------------------------------------------------
-    # Run both loops concurrently
+    # Image delivery loop: reads from the image queue and sends to client
+    # ------------------------------------------------------------------
+    async def deliver_images() -> None:
+        """Read images from the queue and send them to the browser."""
+        queue = get_image_queue(user_id)
+        try:
+            while True:
+                if ws.client_state != WebSocketState.CONNECTED:
+                    break
+                try:
+                    image_msg = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    await _send_json(ws, image_msg)
+                    await record_image_generated(user_id)
+                    logger.info("Delivered image to user %s", user_id)
+                except asyncio.TimeoutError:
+                    continue
+        except Exception as e:
+            logger.error("Error in image delivery for %s: %s", user_id, e)
+
+    # ------------------------------------------------------------------
+    # Run all loops concurrently
     # ------------------------------------------------------------------
     try:
         await asyncio.gather(
             receive_from_client(),
             send_to_client(),
+            deliver_images(),
             return_exceptions=True,
         )
     finally:
@@ -332,6 +298,7 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
                 logger.error("Failed to save gallery for %s: %s", user_id, e)
 
         await close_session(user_id)
+        remove_image_queue(user_id)
 
         # Close the WebSocket if still open
         if ws.client_state == WebSocketState.CONNECTED:

@@ -16,6 +16,7 @@ from google.adk.tools import ToolContext
 
 from mirror_mind import breathing as breathing_module
 from mirror_mind import image_service
+from mirror_mind.image_service import get_image_queue
 from mirror_mind.config import LIVE_MODEL
 from mirror_mind.emotion_mapping import get_visual_prompt
 from mirror_mind.prompts import SYSTEM_INSTRUCTION
@@ -98,20 +99,35 @@ def analyze_and_generate_art(
         image_b64 = None
 
     if image_b64:
-        # Store in session state so the WebSocket send loop can pick it up
-        tool_context.state["latest_image"] = image_b64
-        tool_context.state["image_updated"] = True
-        tool_context.state["latest_image_emotion"] = emotional_state
-        tool_context.state["latest_image_stage"] = stage
+        # Put image in the delivery queue for the WebSocket send loop
+        user_id = tool_context.state.get("session_id", "default").split("_")[0]
+        # Reconstruct user_id from session_id format: "user_<ts>_<rand>_<hex>"
+        # The session_id is set by session_manager as "{user_id}_{uuid}"
+        # We need the original user_id which is everything before the last _<hex>
+        sid = tool_context.state.get("session_id", "")
+        parts = sid.rsplit("_", 1)
+        uid = parts[0] if len(parts) > 1 else sid
+
+        queue = get_image_queue(uid)
+        try:
+            queue.put_nowait({
+                "type": "image",
+                "data": image_b64,
+                "emotion": emotional_state,
+                "stage": stage,
+            })
+            logger.info("Image queued for delivery to user %s (emotion: %s, stage: %s)", uid, emotional_state, stage)
+        except Exception as e:
+            logger.error("Failed to queue image: %s", e)
 
         return {
             "status": "success",
             "emotion": emotional_state,
             "stage": stage,
             "message": (
-                "Nueva obra de arte generada y enviada a la pantalla del usuario. "
-                "El paisaje refleja su estado emocional actual. "
-                "Continua la conversacion con empatia."
+                "New artwork generated and sent to the user's screen. "
+                "The landscape reflects their current emotional state. "
+                "Continue the conversation with empathy."
             ),
         }
 

@@ -58,15 +58,17 @@ export function useMirrorMind() {
       }
 
       switch (msg.type) {
-        case 'image':
+        case 'image': {
+          const dataUri = `data:image/png;base64,${msg.data}`;
           setState((prev) => ({
             ...prev,
             previousImageUrl: prev.imageUrl,
-            imageUrl: msg.type === 'image' ? msg.data : prev.imageUrl,
-            emotion: msg.type === 'image' ? msg.emotion : prev.emotion,
-            stage: (msg.type === 'image' ? msg.stage : prev.stage) as MirrorState['stage'],
+            imageUrl: dataUri,
+            emotion: msg.emotion,
+            stage: msg.stage as MirrorState['stage'],
           }));
           break;
+        }
 
         case 'transcript':
           if (msg.author === 'user') {
