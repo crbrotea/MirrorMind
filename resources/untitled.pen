@@ -1,0 +1,173 @@
+{
+  "version": "2.7",
+  "children": [
+    {
+      "type": "frame",
+      "id": "bi8Au",
+      "x": -90,
+      "y": -87,
+      "name": "Frame",
+      "clip": true,
+      "width": 742,
+      "height": 577,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "gap": 32,
+      "padding": 60,
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "R4RLG",
+          "name": "Logo Mark",
+          "width": 199,
+          "height": 203,
+          "layout": "none",
+          "children": [
+            {
+              "type": "frame",
+              "id": "NUl9O",
+              "x": 12,
+              "y": 20,
+              "name": "leftShape",
+              "width": 82,
+              "height": 160,
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 180,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#7B7BF7",
+                    "position": 0
+                  },
+                  {
+                    "color": "#9B8BFF",
+                    "position": 1
+                  }
+                ]
+              },
+              "cornerRadius": [
+                40,
+                8,
+                8,
+                40
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "olUKq",
+              "x": 106,
+              "y": 20,
+              "name": "rightShape",
+              "width": 82,
+              "height": 160,
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 180,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#D8F5A2",
+                    "position": 0
+                  },
+                  {
+                    "color": "#B8E87A",
+                    "position": 1
+                  }
+                ]
+              },
+              "cornerRadius": [
+                8,
+                40,
+                40,
+                8
+              ]
+            },
+            {
+              "type": "ellipse",
+              "id": "asMjq",
+              "x": 92,
+              "y": 92,
+              "name": "centerDot",
+              "fill": "#7B7BF7",
+              "width": 16,
+              "height": 16
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "1uXPz",
+          "name": "wordmarkGroup",
+          "width": 288,
+          "height": 77,
+          "layout": "vertical",
+          "gap": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "bxoKe",
+              "name": "brandName",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 90,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#7B7BF7",
+                    "position": 0
+                  },
+                  {
+                    "color": "#7B7BF7",
+                    "position": 0.4
+                  },
+                  {
+                    "color": "#2D2D3F",
+                    "position": 0.65
+                  },
+                  {
+                    "color": "#1C1C1C",
+                    "position": 1
+                  }
+                ]
+              },
+              "textGrowth": "fixed-width",
+              "width": 286,
+              "content": "MirrorMind",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 42,
+              "fontWeight": "300",
+              "letterSpacing": -0.5
+            },
+            {
+              "type": "text",
+              "id": "yrULn",
+              "name": "tagline",
+              "fill": "#9A9A9A",
+              "content": "See your emotions. Transform your world.",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "letterSpacing": 0.3
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

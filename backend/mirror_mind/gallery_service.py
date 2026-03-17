@@ -205,9 +205,15 @@ async def get_session_detail(gallery_id: str) -> dict[str, Any] | None:
 
 
 def _summarize_gallery_entry(data: dict[str, Any]) -> dict[str, Any]:
-    """Create a summary of a gallery entry without heavy image data."""
+    """Create a summary of a gallery entry with last image as thumbnail."""
+    images = data.get("images", [])
+    # Use the last image as the final artwork
+    final_image = images[-1]["data"] if images else None
+    thumbnail = images[0]["data"] if images else None
+
     return {
         "gallery_id": data.get("gallery_id"),
+        "session_id": data.get("session_id"),
         "created_at": data.get("created_at"),
         "duration_seconds": data.get("duration_seconds"),
         "final_emotion": data.get("final_emotion"),
@@ -215,4 +221,6 @@ def _summarize_gallery_entry(data: dict[str, Any]) -> dict[str, Any]:
         "image_count": data.get("image_count", 0),
         "emotion_count": data.get("emotion_count", 0),
         "emotional_journey": data.get("emotional_journey", []),
+        "final_image_url": f"data:image/png;base64,{final_image}" if final_image else None,
+        "thumbnail_url": f"data:image/png;base64,{thumbnail}" if thumbnail else None,
     }

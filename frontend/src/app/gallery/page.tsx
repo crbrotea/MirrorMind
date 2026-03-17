@@ -1,13 +1,46 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import GalleryGrid from '@/components/GalleryGrid';
 import type { GalleryEntry } from '@/types';
 
-// Mock data for MVP -- will be replaced with Firebase data
-const MOCK_ENTRIES: GalleryEntry[] = [];
+const API_BASE = process.env.NEXT_PUBLIC_WS_URL
+  ? process.env.NEXT_PUBLIC_WS_URL.replace('wss://', 'https://').replace('ws://', 'http://').replace('/ws', '')
+  : 'http://localhost:8080';
 
 export default function GalleryPage() {
+  const [entries, setEntries] = useState<GalleryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const userId = localStorage.getItem('mirrormind_user_id');
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    fetch(`${API_BASE}/api/gallery/${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const gallery = (data.gallery ?? []).map((entry: Record<string, unknown>) => ({
+          sessionId: entry.session_id as string ?? entry.gallery_id as string,
+          date: new Date((entry.created_at as number) * 1000).toISOString(),
+          emotions: (entry.emotional_journey as Array<{ emotion: string }> ?? []).map(
+            (e: { emotion: string }) => e.emotion
+          ),
+          finalEmotion: entry.final_emotion as string ?? 'neutral',
+          finalImageUrl: entry.final_image_url as string ?? '',
+          thumbnailUrl: entry.thumbnail_url as string ?? '',
+          imageCount: entry.image_count as number ?? 0,
+          galleryId: entry.gallery_id as string,
+        }));
+        setEntries(gallery);
+      })
+      .catch((err) => console.error('Failed to load gallery:', err))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <main className="relative min-h-dvh bg-[#0a0a1a] overflow-y-auto">
       {/* Header */}
@@ -58,7 +91,13 @@ export default function GalleryPage() {
       </header>
 
       {/* Gallery content */}
-      <GalleryGrid entries={MOCK_ENTRIES} />
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <p className="text-white/40 text-sm">Cargando galería...</p>
+        </div>
+      ) : (
+        <GalleryGrid entries={entries} />
+      )}
     </main>
   );
 }

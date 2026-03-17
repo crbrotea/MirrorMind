@@ -140,7 +140,12 @@ export function useMirrorMind() {
     });
 
     wsRef.current = ws;
-    const userId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    // Persist user_id in localStorage so gallery works across sessions
+    let userId = localStorage.getItem('mirrormind_user_id');
+    if (!userId) {
+      userId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      localStorage.setItem('mirrormind_user_id', userId);
+    }
     ws.connect(`${WS_URL}/${userId}`);
   }, [handleTextMessage, handleBinaryMessage]);
 

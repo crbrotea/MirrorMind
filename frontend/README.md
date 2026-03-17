@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MirrorMind Frontend
 
-## Getting Started
+Next.js 15 web app for MirrorMind — captures voice via microphone, streams PCM audio to the backend over WebSocket, and displays AI-generated emotional landscapes in real time.
 
-First, run the development server:
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp env.example .env.local   # Then edit with your backend URL
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_WS_URL` | Backend WebSocket URL | `ws://localhost:8080/ws` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For production, set this in Vercel:
+```bash
+vercel env add NEXT_PUBLIC_WS_URL production
+# Enter: wss://mirrormind-backend-XXXXX.us-central1.run.app/ws
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/                        # Next.js App Router pages
+│   ├── layout.tsx              # Root layout (PWA meta, dark theme, lang=es)
+│   ├── page.tsx                # Landing page — "Comenzar" CTA
+│   ├── session/page.tsx        # Main experience — voice + canvas + controls
+│   ├── gallery/page.tsx        # Gallery — past sessions from API
+│   └── globals.css             # Tailwind + custom keyframes
+│
+├── components/
+│   ├── EmotionalCanvas.tsx     # Full-screen dual-layer image crossfade (3s)
+│   ├── VoiceControls.tsx       # Mic button with pulse animation + waveform
+│   ├── TranscriptOverlay.tsx   # Agent/user speech subtitles (auto-fade)
+│   ├── BreathingGuide.tsx      # Animated breathing circle (inhale/hold/exhale)
+│   ├── EmotionIndicator.tsx    # Top-left emotion badge + stage label
+│   ├── SessionHeader.tsx       # Timer, stage progress bar, end button
+│   ├── GalleryGrid.tsx         # Responsive grid + full-screen viewer modal
+│   └── GalleryCard.tsx         # Session card with emotion dots + date
+│
+├── hooks/
+│   ├── useMirrorMind.ts        # Core state machine — WebSocket, audio I/O, state
+│   ├── useAudioCapture.ts      # Mic → AudioWorklet → PCM Int16 16kHz chunks
+│   ├── useAudioPlayback.ts     # PCM chunks → AudioContext 24kHz playback
+│   └── useBreathingSync.ts     # Breathing phase cycling with rAF progress
+│
+├── lib/
+│   ├── websocket.ts            # WebSocket client with auto-reconnect
+│   ├── audio-utils.ts          # Float32↔Int16 conversion, base64 helpers
+│   ├── constants.ts            # Emotion colors, stage labels (Spanish), WS URL
+│   └── firebase.ts             # Firebase init stub
+│
+└── types/
+    └── index.ts                # MirrorState, WSMessage types, BreathingPattern
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Key Concepts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Audio Pipeline
 
-## Deploy on Vercel
+```
+Microphone
+  → getUserMedia (16kHz mono)
+  → AudioWorkletNode (PCMCaptureProcessor)
+  → Float32 → Int16 conversion
+  → WebSocket binary frames → Backend
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+Backend
+  → WebSocket binary frames (24kHz PCM)
+  → AudioContext buffer queue
+  → Gapless sequential playback → Speaker
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The AudioWorklet processor lives in `public/audio-worklet-processor.js`.
+
+### Image Display
+
+`EmotionalCanvas` uses a dual-layer crossfade technique:
+- Two absolutely positioned `<img>` elements (Layer A and Layer B)
+- On each new image, the inactive layer loads the new image and fades to opacity 1
+- 3-second CSS transition creates smooth crossfade
+
+### State Machine
+
+`useMirrorMind` manages the full session lifecycle:
+1. Connect WebSocket with persistent `user_id` (stored in localStorage)
+2. Route binary messages to `useAudioPlayback`
+3. Route JSON messages to state updates (image, emotion, stage, transcript, breathing)
+4. Expose controls: `connect`, `startListening`, `stopListening`, `endSession`
+
+### WebSocket Protocol
+
+**Sending** (to backend):
+- Binary: PCM Int16 audio chunks from microphone
+- JSON: `{ type: "end_session" }`
+
+**Receiving** (from backend):
+- Binary: PCM audio from Gemini voice agent
+- JSON: `image`, `transcript`, `emotion_update`, `stage_change`, `breathing_pattern`, `session_complete`
+
+## Deploy
+
+```bash
+vercel --yes --prod
+```
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server (Turbopack) |
+| `npm run build` | Production build |
+| `npm run start` | Serve production build |
+| `npm run lint` | Run ESLint |

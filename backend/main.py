@@ -142,6 +142,7 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
 
     last_stage: str | None = "welcome"
     last_emotion: str | None = "neutral"
+    session_images: list[dict] = []  # Accumulate images for gallery
 
     # ------------------------------------------------------------------
     # Receive loop: browser -> ADK
@@ -242,6 +243,13 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
                     image_msg = await asyncio.wait_for(queue.get(), timeout=1.0)
                     await _send_json(ws, image_msg)
                     await record_image_generated(user_id)
+                    # Store for gallery persistence
+                    session_images.append({
+                        "data": image_msg["data"],
+                        "emotion": image_msg.get("emotion", ""),
+                        "stage": image_msg.get("stage", ""),
+                        "timestamp": time.time(),
+                    })
                     logger.info("Delivered image to user %s", user_id)
                 except asyncio.TimeoutError:
                     continue
@@ -281,7 +289,7 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
                     user_id=user_id,
                     session_id=meta.session_id,
                     emotional_journey=journey,
-                    images=[],  # Full image persistence handled separately
+                    images=session_images,
                     duration_seconds=time.time() - meta.created_at,
                     final_emotion=last_emotion or "neutral",
                     final_stage=last_stage or "welcome",
