@@ -13,7 +13,6 @@ dependencies:
   flutter_riverpod: ^2.6.1
   go_router: ^14.8.1
   web_socket_channel: ^3.0.2
-  record: ^5.2.0
   flutter_sound: ^9.17.8
   permission_handler: ^11.4.0
   shared_preferences: ^2.5.3
