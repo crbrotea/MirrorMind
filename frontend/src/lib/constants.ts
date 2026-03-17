@@ -44,11 +44,24 @@ export const EMOTION_COLORS: EmotionColors = {
 };
 
 export const STAGE_LABELS: Record<string, string> = {
-  welcome: 'Welcome',
-  mirror: 'Mirror',
-  shift: 'Transformation',
-  arrive: 'Arrival',
-  complete: 'Complete',
+  welcome: 'Bienvenida',
+  mirror: 'Espejo',
+  shift: 'Transformación',
+  arrive: 'Llegada',
+  complete: 'Completado',
+};
+
+export const EMOTION_DISPLAY_NAMES: Record<string, string> = {
+  anxiety: 'Ansiedad',
+  sadness: 'Tristeza',
+  anger: 'Ira',
+  joy: 'Alegría',
+  calm: 'Calma',
+  fear: 'Miedo',
+  hope: 'Esperanza',
+  love: 'Amor',
+  neutral: 'Neutral',
+  frustration: 'Frustración',
 };
 
 export const STAGE_ORDER = ['welcome', 'mirror', 'shift', 'arrive', 'complete'] as const;

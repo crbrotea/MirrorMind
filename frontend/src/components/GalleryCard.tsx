@@ -9,13 +9,13 @@ interface GalleryCardProps {
 }
 
 const EMOTION_LABELS: Record<string, string> = {
-  anxiety: 'Anxiety',
-  sadness: 'Sadness',
-  anger: 'Anger',
-  joy: 'Joy',
-  calm: 'Calm',
-  fear: 'Fear',
-  hope: 'Hope',
+  anxiety: 'Ansiedad',
+  sadness: 'Tristeza',
+  anger: 'Ira',
+  joy: 'Alegría',
+  calm: 'Calma',
+  fear: 'Miedo',
+  hope: 'Esperanza',
   neutral: 'Neutral',
 };
 
@@ -23,7 +23,7 @@ export default function GalleryCard({ entry, onClick }: GalleryCardProps) {
   const colors = EMOTION_COLORS[entry.finalEmotion] ?? EMOTION_COLORS.neutral;
   const emotionLabel = EMOTION_LABELS[entry.finalEmotion] ?? entry.finalEmotion;
 
-  const formattedDate = new Date(entry.date).toLocaleDateString('en-US', {
+  const formattedDate = new Date(entry.date).toLocaleDateString('es-ES', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -39,7 +39,7 @@ export default function GalleryCard({ entry, onClick }: GalleryCardProps) {
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={entry.thumbnailUrl}
-          alt={`Session from ${formattedDate}`}
+          alt={`Sesión del ${formattedDate}`}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       ) : (

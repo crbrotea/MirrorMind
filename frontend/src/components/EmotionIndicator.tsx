@@ -1,26 +1,15 @@
 'use client';
 
-import { EMOTION_COLORS, STAGE_LABELS } from '@/lib/constants';
+import { EMOTION_COLORS, EMOTION_DISPLAY_NAMES, STAGE_LABELS } from '@/lib/constants';
 
 interface EmotionIndicatorProps {
   emotion: string;
   stage: string;
 }
 
-const EMOTION_LABELS: Record<string, string> = {
-  anxiety: 'Anxiety',
-  sadness: 'Sadness',
-  anger: 'Anger',
-  joy: 'Joy',
-  calm: 'Calm',
-  fear: 'Fear',
-  hope: 'Hope',
-  neutral: 'Neutral',
-};
-
 export default function EmotionIndicator({ emotion, stage }: EmotionIndicatorProps) {
   const colors = EMOTION_COLORS[emotion] ?? EMOTION_COLORS.neutral;
-  const emotionLabel = EMOTION_LABELS[emotion] ?? emotion;
+  const emotionLabel = EMOTION_DISPLAY_NAMES[emotion] ?? emotion;
   const stageLabel = STAGE_LABELS[stage] ?? stage;
 
   return (

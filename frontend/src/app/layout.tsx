@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'MirrorMind - Your Emotional Mirror',
+  title: 'MirrorMind - Tu Espejo Emocional',
   description:
-    'MirrorMind transforms your emotions into art. Speak, and watch your inner landscape come alive.',
+    'MirrorMind transforma tus emociones en arte. Habla y observa cómo tu paisaje interior cobra vida.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="es" className="dark">
       <head>
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>

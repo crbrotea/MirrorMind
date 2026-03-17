@@ -1,7 +1,7 @@
 {
   "name": "MirrorMind",
   "short_name": "MirrorMind",
-  "description": "Your emotional mirror — transforms feelings into art",
+  "description": "Tu espejo emocional — transforma sentimientos en arte",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

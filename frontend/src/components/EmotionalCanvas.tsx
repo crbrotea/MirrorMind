@@ -55,7 +55,7 @@ export default function EmotionalCanvas({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={layerARef.current ?? imageUrl ?? ''}
-            alt="Emotional landscape"
+            alt="Paisaje emocional"
             className="h-full w-full object-cover"
           />
         )}
@@ -70,7 +70,7 @@ export default function EmotionalCanvas({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={layerBRef.current ?? imageUrl ?? ''}
-            alt="Emotional landscape"
+            alt="Paisaje emocional"
             className="h-full w-full object-cover"
           />
         )}

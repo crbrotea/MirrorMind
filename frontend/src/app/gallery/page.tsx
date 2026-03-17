@@ -15,7 +15,7 @@ export default function GalleryPage() {
         <Link
           href="/"
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 border border-white/10 transition-colors hover:bg-white/10"
-          aria-label="Back to home"
+          aria-label="Volver al inicio"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -33,7 +33,7 @@ export default function GalleryPage() {
         </Link>
 
         <h1 className="text-sm font-medium text-white/70 tracking-wide">
-          Gallery
+          Galería
         </h1>
 
         <Link
@@ -53,7 +53,7 @@ export default function GalleryPage() {
             <path d="M12 5v14" />
             <path d="M5 12h14" />
           </svg>
-          <span className="text-xs text-white/60 hidden sm:inline">New session</span>
+          <span className="text-xs text-white/60 hidden sm:inline">Nueva sesión</span>
         </Link>
       </header>
 

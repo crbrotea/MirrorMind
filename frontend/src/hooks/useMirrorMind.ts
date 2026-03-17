@@ -138,7 +138,8 @@ export function useMirrorMind() {
     });
 
     wsRef.current = ws;
-    ws.connect(WS_URL);
+    const userId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    ws.connect(`${WS_URL}/${userId}`);
   }, [handleTextMessage, handleBinaryMessage]);
 
   const disconnect = useCallback(() => {

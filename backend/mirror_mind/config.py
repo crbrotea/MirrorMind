@@ -19,10 +19,10 @@ load_dotenv(_BACKEND_DIR / ".env")
 GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
 
 # Live API voice model (native audio with affective dialog support)
-LIVE_MODEL: str = "gemini-2.5-flash-preview-native-audio-dialog"
+LIVE_MODEL: str = "gemini-2.5-flash-native-audio-preview-12-2025"
 
-# Image generation model (Nano Banana 2 - fast + high quality)
-IMAGE_MODEL: str = "gemini-2.0-flash-preview-image-generation"
+# Image generation model
+IMAGE_MODEL: str = "gemini-2.5-flash-image"
 
 # ---------------------------------------------------------------------------
 # Firebase

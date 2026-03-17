@@ -120,7 +120,7 @@ export default function VoiceControls({
           backdrop-blur-md border border-white/20
           min-h-[48px] min-w-[48px]
         `}
-        aria-label={isListening ? 'Stop microphone' : 'Start microphone'}
+        aria-label={isListening ? 'Detener micrófono' : 'Iniciar micrófono'}
       >
         {/* Pulse rings when recording */}
         {isListening && (
@@ -164,10 +164,10 @@ export default function VoiceControls({
       {!error && (
         <p className="mt-3 text-xs text-white/40">
           {!isConnected
-            ? 'Connecting...'
+            ? 'Conectando...'
             : isListening
-              ? 'Listening...'
-              : 'Tap to speak'}
+              ? 'Escuchando...'
+              : 'Toca para hablar'}
         </p>
       )}
     </div>

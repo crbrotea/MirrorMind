@@ -44,13 +44,13 @@ export default function LandingPage() {
 
         {/* Tagline */}
         <p className="mb-6 text-lg font-light tracking-wide text-white/50">
-          Your Emotional Mirror
+          Tu Espejo Emocional
         </p>
 
         {/* Description */}
         <p className="mb-12 max-w-sm text-sm leading-relaxed text-white/35">
-          Speak and watch your emotions transform into living landscapes.
-          MirrorMind listens, reflects, and guides you to where you want to be.
+          Habla y observa cómo tus emociones se transforman en paisajes vivos.
+          MirrorMind escucha, refleja, y te guía hacia donde quieres estar.
         </p>
 
         {/* CTA */}
@@ -58,7 +58,7 @@ export default function LandingPage() {
           href="/session"
           className="group relative overflow-hidden rounded-full border border-white/15 bg-white/10 px-10 py-3.5 text-sm font-medium tracking-wide text-white/90 backdrop-blur-md transition-all duration-300 hover:bg-white/15 hover:border-white/25 hover:shadow-[0_0_30px_rgba(255,255,255,0.08)]"
         >
-          <span className="relative z-10">Begin</span>
+          <span className="relative z-10">Comenzar</span>
           <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] transition-transform duration-700 group-hover:translate-x-[200%]" />
         </Link>
 
@@ -67,13 +67,13 @@ export default function LandingPage() {
           href="/gallery"
           className="mt-6 text-xs text-white/25 transition-colors hover:text-white/45"
         >
-          View session gallery
+          Ver galería de sesiones
         </Link>
       </div>
 
       {/* Bottom subtle text */}
       <p className="absolute bottom-6 text-[10px] text-white/15 tracking-widest uppercase">
-        Take a deep breath. Start here.
+        Respira profundo. Comienza aquí.
       </p>
     </main>
   );
