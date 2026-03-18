@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// Represents the color palette associated with a specific emotion.
 class EmotionColor {
   final Color primary;
@@ -111,17 +113,13 @@ String techniqueLabel(String technique) {
   }
 }
 
-/// WebSocket base URL. Override via environment variable if needed.
-const String wsBaseUrl = String.fromEnvironment(
-  'WS_BASE_URL',
-  defaultValue: 'ws://localhost:8080/ws',
-);
+/// WebSocket base URL. Reads from .env, falls back to localhost.
+String get wsBaseUrl =>
+    dotenv.env['WS_BASE_URL'] ?? 'ws://localhost:8080/ws';
 
-/// REST API base URL.
-const String apiBaseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://localhost:8080',
-);
+/// REST API base URL. Reads from .env, falls back to localhost.
+String get apiBaseUrl =>
+    dotenv.env['API_BASE_URL'] ?? 'http://localhost:8080';
 
 /// Audio capture sample rate in Hz.
 const int sampleRateCapture = 16000;

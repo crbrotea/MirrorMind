@@ -43,6 +43,11 @@ class SessionRepository {
     await _webSocket.disconnect();
   }
 
+  /// Feeds PCM audio data to the playback service for immediate output.
+  void playAudio(List<int> pcmData) {
+    _audioPlayback.playChunk(pcmData);
+  }
+
   /// Starts capturing microphone audio and piping it to the WebSocket.
   ///
   /// Each PCM16 chunk from the microphone is sent as a binary frame to the

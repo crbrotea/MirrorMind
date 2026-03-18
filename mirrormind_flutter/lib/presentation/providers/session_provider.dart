@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
 import '../../data/repositories/session_repository.dart';
-import '../../data/services/audio_playback_service.dart';
 import '../../data/services/user_id_service.dart';
 
 import '../../domain/models/mirror_state.dart';
@@ -27,7 +26,6 @@ class SessionNotifier extends StateNotifier<MirrorState> {
   SessionNotifier() : super(const MirrorState());
 
   SessionRepository? _repository;
-  final AudioPlaybackService _playback = AudioPlaybackService();
 
   StreamSubscription<String>? _textSub;
   StreamSubscription<List<int>>? _binarySub;
@@ -101,7 +99,7 @@ class SessionNotifier extends StateNotifier<MirrorState> {
 
         case WsAudioMessage():
           final bytes = base64Decode(message.data);
-          _playback.playChunk(bytes);
+          _repository?.playAudio(bytes);
 
         case WsError():
           dev.log(
@@ -121,7 +119,7 @@ class SessionNotifier extends StateNotifier<MirrorState> {
 
   /// Feeds raw binary PCM audio from the server into the playback service.
   void _handleBinaryMessage(List<int> data) {
-    _playback.playChunk(data);
+    _repository?.playAudio(data);
   }
 
   // ---------------------------------------------------------------------------
@@ -168,7 +166,6 @@ class SessionNotifier extends StateNotifier<MirrorState> {
     _textSub?.cancel();
     _binarySub?.cancel();
     _repository?.dispose();
-    _playback.dispose();
     super.dispose();
   }
 }
