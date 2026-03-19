@@ -37,7 +37,7 @@ export default function BreathingGuide({ pattern }: BreathingGuideProps) {
   const label = PHASE_LABELS[phaseName] ?? phaseName;
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+    <div data-testid="breathing-guide" className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
       <div className="relative flex items-center justify-center">
         {/* Outer glow */}
         <div

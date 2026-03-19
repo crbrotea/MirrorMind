@@ -57,14 +57,14 @@ export default function TranscriptOverlay({
     >
       {/* Agent transcript */}
       {agentTranscript && (
-        <div className="max-w-md rounded-xl bg-white/10 px-4 py-2.5 backdrop-blur-lg border border-white/10">
+        <div data-testid="agent-transcript" className="max-w-md rounded-xl bg-white/10 px-4 py-2.5 backdrop-blur-lg border border-white/10">
           <p className="text-sm leading-relaxed text-white/90">{agentTranscript}</p>
         </div>
       )}
 
       {/* User transcript */}
       {userTranscript && (
-        <div className="max-w-md rounded-xl bg-white/5 px-4 py-2 backdrop-blur-md border border-white/5">
+        <div data-testid="user-transcript" className="max-w-md rounded-xl bg-white/5 px-4 py-2 backdrop-blur-md border border-white/5">
           <p className="text-sm leading-relaxed text-white/60 italic">{userTranscript}</p>
         </div>
       )}

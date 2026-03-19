@@ -29,26 +29,29 @@ from google.adk.runners import InMemoryRunner
 from google.adk.agents.run_config import RunConfig
 from google.genai import types
 
-from mirror_mind.agent import root_agent
 from mirror_mind.config import (
     APP_NAME,
     CORS_ORIGINS,
     HOST,
     LOG_LEVEL,
     PORT,
+    TEST_MODE,
     VOICE_NAME,
 )
-from mirror_mind.session_manager import (
-    close_session,
-    create_session,
-    get_session_metadata,
-    record_emotion,
-    record_image_generated,
-    set_session_service,
-    update_activity,
-)
-from mirror_mind.gallery_service import save_session as save_gallery_session
-from mirror_mind.image_service import get_image_queue, remove_image_queue
+
+if not TEST_MODE:
+    from mirror_mind.agent import root_agent
+    from mirror_mind.session_manager import (
+        close_session,
+        create_session,
+        get_session_metadata,
+        record_emotion,
+        record_image_generated,
+        set_session_service,
+        update_activity,
+    )
+    from mirror_mind.gallery_service import save_session as save_gallery_session
+    from mirror_mind.image_service import get_image_queue, remove_image_queue
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -77,12 +80,14 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
-# ADK runner (shared across all connections)
+# ADK runner (shared across all connections) — skipped in test mode
 # ---------------------------------------------------------------------------
-runner = InMemoryRunner(app_name=APP_NAME, agent=root_agent)
-
-# Share the runner's session service with our session manager
-set_session_service(runner.session_service)
+runner = None
+if not TEST_MODE:
+    runner = InMemoryRunner(app_name=APP_NAME, agent=root_agent)
+    set_session_service(runner.session_service)
+else:
+    logger.warning("🧪 TEST_MODE active — using mock agent (no Gemini API calls)")
 
 
 # ---------------------------------------------------------------------------
@@ -111,6 +116,12 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
     live runner (Gemini Live API), and sends back audio, transcripts, images,
     breathing patterns, and stage changes.
     """
+    # In test mode, use the scripted mock session instead of real ADK
+    if TEST_MODE:
+        from mirror_mind.test_fixtures import run_mock_session
+        await run_mock_session(ws, user_id)
+        return
+
     await ws.accept()
     logger.info("WebSocket connected for user %s", user_id)
 

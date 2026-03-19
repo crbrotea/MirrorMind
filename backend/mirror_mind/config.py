@@ -42,6 +42,7 @@ CORS_ORIGINS: list[str] = [
     if origin.strip()
 ]
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+TEST_MODE: bool = os.getenv("TEST_MODE", "").lower() in ("1", "true", "yes")
 
 # ---------------------------------------------------------------------------
 # Audio settings

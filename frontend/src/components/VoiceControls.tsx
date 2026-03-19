@@ -94,7 +94,7 @@ export default function VoiceControls({
   }, [isListening, onStartListening, onStopListening]);
 
   return (
-    <div className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-8 pt-4">
+    <div data-testid="voice-controls" className="absolute inset-x-0 bottom-0 flex flex-col items-center pb-8 pt-4">
       {/* Waveform */}
       <canvas
         ref={canvasRef}
@@ -105,6 +105,7 @@ export default function VoiceControls({
 
       {/* Mic button */}
       <button
+        data-testid="mic-button"
         onClick={handleToggle}
         disabled={!isConnected}
         className={`

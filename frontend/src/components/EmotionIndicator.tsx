@@ -13,7 +13,7 @@ export default function EmotionIndicator({ emotion, stage }: EmotionIndicatorPro
   const stageLabel = STAGE_LABELS[stage] ?? stage;
 
   return (
-    <div className="absolute left-4 top-16 z-20 flex flex-col gap-1.5">
+    <div data-testid="emotion-indicator" className="absolute left-4 top-16 z-20 flex flex-col gap-1.5">
       {/* Emotion badge */}
       <div
         className="flex items-center gap-2 rounded-full px-3 py-1.5 backdrop-blur-md border border-white/10 transition-all duration-1000"

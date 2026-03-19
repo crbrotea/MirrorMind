@@ -35,7 +35,7 @@ export default function EmotionalCanvas({
   const hasAnyImage = layerARef.current || layerBRef.current || imageUrl || previousImageUrl;
 
   return (
-    <div className="absolute inset-0 overflow-hidden bg-[#0a0a1a]">
+    <div data-testid="emotional-canvas" className="absolute inset-0 overflow-hidden bg-[#0a0a1a]">
       {/* Ambient gradient when no images */}
       {!hasAnyImage && (
         <div

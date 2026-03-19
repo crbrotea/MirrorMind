@@ -36,7 +36,7 @@ export default function SessionHeader({
   const progressPercent = stageIndex >= 0 ? (stageIndex / totalStages) * 100 : 0;
 
   return (
-    <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 py-3">
+    <div data-testid="session-header" className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 py-3">
       {/* Back button */}
       <Link
         href="/"
@@ -74,7 +74,7 @@ export default function SessionHeader({
             />
           ))}
         </div>
-        <span className="text-[10px] text-white/40 uppercase tracking-widest">
+        <span data-testid="stage-label" className="text-[10px] text-white/40 uppercase tracking-widest">
           {STAGE_LABELS[stage] ?? stage}
         </span>
       </div>

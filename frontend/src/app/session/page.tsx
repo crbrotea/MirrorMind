@@ -53,7 +53,7 @@ export default function SessionPage() {
   // Loading state
   if (isInitializing) {
     return (
-      <main className="relative flex min-h-dvh items-center justify-center bg-[#0a0a1a]">
+      <main data-testid="session-loading" className="relative flex min-h-dvh items-center justify-center bg-[#0a0a1a]">
         <div className="flex flex-col items-center gap-4 animate-fade-in">
           <div className="h-12 w-12 rounded-full border-2 border-white/10 border-t-white/40 animate-spin" />
           <p className="text-sm text-white/40">Preparando tu espacio...</p>
@@ -65,7 +65,7 @@ export default function SessionPage() {
   // Session complete
   if (state.stage === 'complete') {
     return (
-      <main className="relative flex min-h-dvh items-center justify-center bg-[#0a0a1a]">
+      <main data-testid="session-complete" className="relative flex min-h-dvh items-center justify-center bg-[#0a0a1a]">
         {state.imageUrl && (
           <EmotionalCanvas
             imageUrl={state.imageUrl}
@@ -110,7 +110,7 @@ export default function SessionPage() {
   }
 
   return (
-    <main className="relative h-dvh w-full overflow-hidden">
+    <main data-testid="session-active" className="relative h-dvh w-full overflow-hidden">
       {/* Background canvas */}
       <EmotionalCanvas
         imageUrl={state.imageUrl}
