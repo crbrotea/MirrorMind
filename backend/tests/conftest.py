@@ -1,77 +1,87 @@
 """Pytest fixtures for MirrorMind backend tests.
 
-Starts the FastAPI app in TEST_MODE on a random available port.
+Starts the FastAPI app in TEST_MODE as a subprocess on a random port.
 """
 
 from __future__ import annotations
 
-import asyncio
 import os
 import socket
+import subprocess
+import sys
+import time
 
+import httpx
 import pytest
-import pytest_asyncio
-import uvicorn
 
-# Force test mode before importing the app
+# Force test mode
 os.environ["TEST_MODE"] = "true"
-os.environ["FIREBASE_PROJECT_ID"] = ""  # Force in-memory gallery
+os.environ["FIREBASE_PROJECT_ID"] = ""
 
 
 def _find_free_port() -> int:
-    """Find an available TCP port on localhost."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
 
 
-class _UvicornServer:
-    """Run uvicorn in a background asyncio task."""
-
-    def __init__(self, app: str, host: str, port: int):
-        self.config = uvicorn.Config(app, host=host, port=port, log_level="warning")
-        self.server = uvicorn.Server(self.config)
-        self._task: asyncio.Task | None = None
-
-    async def start(self) -> None:
-        self._task = asyncio.create_task(self.server.serve())
-        # Wait until server is accepting connections
-        for _ in range(50):
-            await asyncio.sleep(0.1)
-            if self.server.started:
-                break
-
-    async def stop(self) -> None:
-        self.server.should_exit = True
-        if self._task:
-            await self._task
+def _wait_for_server(url: str, timeout: float = 15.0) -> bool:
+    """Poll until the server is ready or timeout."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            resp = httpx.get(f"{url}/health", timeout=2.0)
+            if resp.status_code == 200:
+                return True
+        except Exception:
+            pass
+        time.sleep(0.3)
+    return False
 
 
-@pytest_asyncio.fixture(scope="session")
-def event_loop():
-    """Create a single event loop for the whole test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture(scope="session")
-async def backend_server(event_loop):
-    """Start the FastAPI server in test mode and return its base URL."""
+@pytest.fixture(scope="session")
+def backend_server():
+    """Start the backend as a subprocess in TEST_MODE and yield the base URL."""
     port = _find_free_port()
-    server = _UvicornServer("main:app", "127.0.0.1", port)
-    await server.start()
-    yield f"http://127.0.0.1:{port}"
-    await server.stop()
+    backend_dir = os.path.join(os.path.dirname(__file__), "..")
+    venv_python = os.path.join(backend_dir, ".venv", "bin", "python")
+
+    env = {**os.environ, "TEST_MODE": "true", "FIREBASE_PROJECT_ID": "", "LOG_LEVEL": "WARNING"}
+
+    proc = subprocess.Popen(
+        [
+            venv_python, "-m", "uvicorn", "main:app",
+            "--host", "127.0.0.1", "--port", str(port),
+        ],
+        cwd=backend_dir,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    base_url = f"http://127.0.0.1:{port}"
+    if not _wait_for_server(base_url):
+        proc.terminate()
+        stdout, stderr = proc.communicate(timeout=5)
+        raise RuntimeError(
+            f"Backend failed to start on port {port}.\n"
+            f"stdout: {stdout.decode()}\nstderr: {stderr.decode()}"
+        )
+
+    yield base_url
+
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
 
 
 @pytest.fixture(scope="session")
 def backend_url(backend_server):
-    """HTTP base URL for the test server."""
     return backend_server
 
 
 @pytest.fixture(scope="session")
 def ws_url(backend_server):
-    """WebSocket base URL for the test server."""
     return backend_server.replace("http://", "ws://")

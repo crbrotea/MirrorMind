@@ -14,6 +14,11 @@ _BACKEND_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(_BACKEND_DIR / ".env")
 
 # ---------------------------------------------------------------------------
+# Test mode (must be defined early since other settings depend on it)
+# ---------------------------------------------------------------------------
+TEST_MODE: bool = os.getenv("TEST_MODE", "").lower() in ("1", "true", "yes")
+
+# ---------------------------------------------------------------------------
 # Google AI
 # ---------------------------------------------------------------------------
 GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
@@ -25,9 +30,9 @@ LIVE_MODEL: str = "gemini-2.5-flash-native-audio-preview-12-2025"
 IMAGE_MODEL: str = "gemini-2.5-flash-image"
 
 # ---------------------------------------------------------------------------
-# Firebase
+# Firebase (disabled in test mode to use in-memory storage)
 # ---------------------------------------------------------------------------
-FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "")
+FIREBASE_PROJECT_ID: str = "" if TEST_MODE else os.getenv("FIREBASE_PROJECT_ID", "")
 
 # ---------------------------------------------------------------------------
 # Server
@@ -42,7 +47,6 @@ CORS_ORIGINS: list[str] = [
     if origin.strip()
 ]
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
-TEST_MODE: bool = os.getenv("TEST_MODE", "").lower() in ("1", "true", "yes")
 
 # ---------------------------------------------------------------------------
 # Audio settings

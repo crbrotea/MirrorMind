@@ -4,7 +4,8 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
   expect: { timeout: 15_000 },
-  fullyParallel: false, // Session tests depend on sequential flow
+  fullyParallel: false,
+  workers: 1,
   retries: 1,
   reporter: 'html',
   use: {
