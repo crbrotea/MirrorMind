@@ -79,3 +79,7 @@ export const CROSSFADE_DURATION_MS = 3000;
 
 export const DEFAULT_EMOTION = 'neutral';
 export const DEFAULT_STAGE = 'welcome' as const;
+
+// Turn-taking / barge-in parameters
+export const BARGE_IN_RMS_THRESHOLD = 0.08; // Min RMS energy to count as speech (ambient ~0.01-0.03)
+export const BARGE_IN_CONSECUTIVE_CHUNKS = 2; // Chunks above threshold before barge-in triggers (~512ms)

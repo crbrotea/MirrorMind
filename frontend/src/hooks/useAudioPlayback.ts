@@ -5,12 +5,19 @@ import { SAMPLE_RATE_PLAYBACK } from '@/lib/constants';
 import { int16ToFloat32 } from '@/lib/audio-utils';
 import type { AudioPlaybackReturn } from '@/types';
 
-export function useAudioPlayback(): AudioPlaybackReturn {
+interface UseAudioPlaybackOptions {
+  onPlaybackStateChange?: (playing: boolean) => void;
+}
+
+export function useAudioPlayback(options?: UseAudioPlaybackOptions): AudioPlaybackReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const queueRef = useRef<AudioBuffer[]>([]);
   const nextStartTimeRef = useRef(0);
   const activeSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const onPlaybackStateChangeRef = useRef(options?.onPlaybackStateChange);
+  onPlaybackStateChangeRef.current = options?.onPlaybackStateChange;
+  const isPlayingRef = useRef(false);
 
   const getContext = useCallback((): AudioContext => {
     if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
@@ -30,7 +37,9 @@ export function useAudioPlayback(): AudioPlaybackReturn {
       source.onended = () => {
         activeSourcesRef.current.delete(source);
         if (activeSourcesRef.current.size === 0 && queueRef.current.length === 0) {
+          isPlayingRef.current = false;
           setIsPlaying(false);
+          onPlaybackStateChangeRef.current?.(false);
         }
       };
 
@@ -38,6 +47,11 @@ export function useAudioPlayback(): AudioPlaybackReturn {
       const startTime = Math.max(now, nextStartTimeRef.current);
       source.start(startTime);
       nextStartTimeRef.current = startTime + audioBuffer.duration;
+
+      if (!isPlayingRef.current) {
+        isPlayingRef.current = true;
+        onPlaybackStateChangeRef.current?.(true);
+      }
       setIsPlaying(true);
     },
     [getContext]
@@ -80,7 +94,9 @@ export function useAudioPlayback(): AudioPlaybackReturn {
     });
     activeSourcesRef.current.clear();
     nextStartTimeRef.current = 0;
+    isPlayingRef.current = false;
     setIsPlaying(false);
+    onPlaybackStateChangeRef.current?.(false);
   }, []);
 
   return { playChunk, stop, isPlaying };

@@ -23,8 +23,17 @@ class PCMCaptureProcessor extends AudioWorkletProcessor {
 
     if (this._buffer.length >= this._bufferSize) {
       const int16 = new Int16Array(this._buffer.splice(0, this._bufferSize));
+
+      // Calculate RMS energy (normalized 0..1) for voice activity detection
+      let sumSquares = 0;
+      for (let i = 0; i < int16.length; i++) {
+        const normalized = int16[i] / 0x7fff;
+        sumSquares += normalized * normalized;
+      }
+      const rmsEnergy = Math.sqrt(sumSquares / int16.length);
+
       this.port.postMessage(
-        { type: 'pcm-chunk', samples: int16.buffer },
+        { type: 'pcm-chunk', samples: int16.buffer, rmsEnergy },
         [int16.buffer]
       );
     }

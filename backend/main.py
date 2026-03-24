@@ -191,6 +191,12 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
                         )
                         live_queue.send_content(content)
 
+                    elif msg_type == "barge_in":
+                        # User interrupted the agent — frontend already
+                        # stopped playback; Gemini will handle the new
+                        # audio input natively.
+                        logger.info("Barge-in from user %s", user_id)
+
                     elif msg_type == "end_session":
                         # Client requests to end the session
                         break
@@ -208,6 +214,7 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
     async def send_to_client() -> None:
         """Forward agent audio, transcripts, and state updates to the browser."""
         nonlocal last_stage, last_emotion
+        sending_audio = False
 
         try:
             async for event in events:
@@ -217,12 +224,22 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
 
                 # Process event content parts
                 if event.content and event.content.parts:
+                    has_audio_in_event = False
+
                     for part in event.content.parts:
                         # Audio data from Live API
                         if part.inline_data and part.inline_data.data:
                             mime = getattr(part.inline_data, "mime_type", "")
                             if "audio" in mime or not part.text:
+                                # Signal turn start on first audio chunk
+                                if not sending_audio:
+                                    sending_audio = True
+                                    await _send_json(ws, {
+                                        "type": "turn_state",
+                                        "speaking": True,
+                                    })
                                 await ws.send_bytes(part.inline_data.data)
+                                has_audio_in_event = True
 
                         # Transcript text
                         if part.text:
@@ -233,12 +250,32 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
                                 "author": author,
                             })
 
+                    # If we were sending audio but this event had none, turn ended
+                    if sending_audio and not has_audio_in_event:
+                        sending_audio = False
+                        await _send_json(ws, {
+                            "type": "turn_state",
+                            "speaking": False,
+                        })
+                else:
+                    # Non-content event while sending audio means turn ended
+                    if sending_audio:
+                        sending_audio = False
+                        await _send_json(ws, {
+                            "type": "turn_state",
+                            "speaking": False,
+                        })
+
                 # Note: images are delivered via the dedicated deliver_images loop
 
         except WebSocketDisconnect:
             logger.info("Client disconnected (send loop): %s", user_id)
         except Exception as e:
             logger.error("Error in send loop for %s: %s", user_id, e)
+        finally:
+            # Ensure we send end signal if loop exits while speaking
+            if sending_audio and ws.client_state == WebSocketState.CONNECTED:
+                await _send_json(ws, {"type": "turn_state", "speaking": False})
 
     # ------------------------------------------------------------------
     # Image delivery loop: reads from the image queue and sends to client

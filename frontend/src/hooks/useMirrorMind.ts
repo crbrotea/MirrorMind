@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MirrorWebSocket } from '@/lib/websocket';
 import { base64ToArrayBuffer } from '@/lib/audio-utils';
-import { WS_URL, DEFAULT_EMOTION, DEFAULT_STAGE } from '@/lib/constants';
+import {
+  WS_URL,
+  DEFAULT_EMOTION,
+  DEFAULT_STAGE,
+  BARGE_IN_RMS_THRESHOLD,
+  BARGE_IN_CONSECUTIVE_CHUNKS,
+} from '@/lib/constants';
 import { useAudioCapture } from './useAudioCapture';
 import { useAudioPlayback } from './useAudioPlayback';
 import type { MirrorState, WSMessageFromServer } from '@/types';
@@ -20,22 +26,59 @@ const INITIAL_STATE: MirrorState = {
   breathingPattern: null,
   valence: 0,
   arousal: 0,
+  agentSpeaking: false,
 };
 
 export function useMirrorMind() {
   const [state, setState] = useState<MirrorState>(INITIAL_STATE);
   const wsRef = useRef<MirrorWebSocket | null>(null);
 
-  const { playChunk, stop: stopPlayback } = useAudioPlayback();
+  // Turn-taking state (ref for synchronous access in audio callbacks)
+  const agentSpeakingRef = useRef(false);
+  const bargeInCountRef = useRef(0);
+
+  const handlePlaybackStateChange = useCallback((playing: boolean) => {
+    if (!playing) {
+      // Agent finished speaking — re-open mic upstream
+      agentSpeakingRef.current = false;
+      bargeInCountRef.current = 0;
+      setState((prev) => ({ ...prev, agentSpeaking: false }));
+    }
+  }, []);
+
+  const { playChunk, stop: stopPlayback } = useAudioPlayback({
+    onPlaybackStateChange: handlePlaybackStateChange,
+  });
 
   const handleAudioChunk = useCallback(
-    (chunk: ArrayBuffer) => {
+    (chunk: ArrayBuffer, rmsEnergy: number) => {
       const ws = wsRef.current;
-      if (ws && ws.isConnected) {
-        ws.sendBinary(chunk);
+      if (!ws || !ws.isConnected) return;
+
+      if (agentSpeakingRef.current) {
+        // Agent is speaking — check for intentional barge-in
+        if (rmsEnergy > BARGE_IN_RMS_THRESHOLD) {
+          bargeInCountRef.current++;
+          if (bargeInCountRef.current >= BARGE_IN_CONSECUTIVE_CHUNKS) {
+            // Barge-in confirmed: stop agent, resume mic
+            agentSpeakingRef.current = false;
+            bargeInCountRef.current = 0;
+            setState((prev) => ({ ...prev, agentSpeaking: false }));
+            stopPlayback();
+            ws.sendJSON({ type: 'barge_in' });
+            ws.sendBinary(chunk); // Forward this chunk immediately
+          }
+        } else {
+          bargeInCountRef.current = 0;
+        }
+        // Do NOT forward audio while agent speaks (prevents echo interruption)
+        return;
       }
+
+      // Normal user turn — forward to server
+      ws.sendBinary(chunk);
     },
-    []
+    [stopPlayback]
   );
 
   const { startCapture, stopCapture, isCapturing, error: captureError } = useAudioCapture({
@@ -108,6 +151,14 @@ export function useMirrorMind() {
           break;
         }
 
+        case 'turn_state':
+          agentSpeakingRef.current = msg.speaking;
+          if (msg.speaking) {
+            bargeInCountRef.current = 0;
+          }
+          setState((prev) => ({ ...prev, agentSpeaking: msg.speaking }));
+          break;
+
         case 'error':
           console.error('[MirrorMind] Server error:', msg.message);
           break;
@@ -118,6 +169,13 @@ export function useMirrorMind() {
 
   const handleBinaryMessage = useCallback(
     (data: ArrayBuffer) => {
+      // Receiving agent audio — mark agent as speaking (fallback if
+      // the turn_state JSON hasn't arrived yet)
+      if (!agentSpeakingRef.current) {
+        agentSpeakingRef.current = true;
+        bargeInCountRef.current = 0;
+        setState((prev) => ({ ...prev, agentSpeaking: true }));
+      }
       playChunk(data);
     },
     [playChunk]

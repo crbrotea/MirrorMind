@@ -10,6 +10,7 @@ export interface MirrorState {
   breathingPattern: BreathingPattern | null;
   valence: number;
   arousal: number;
+  agentSpeaking: boolean;
 }
 
 export type WSMessageFromServer =
@@ -20,12 +21,14 @@ export type WSMessageFromServer =
   | { type: 'stage_change'; stage: string }
   | { type: 'session_complete'; gallery_id: string }
   | { type: 'audio'; data: string }
+  | { type: 'turn_state'; speaking: boolean }
   | { type: 'error'; message: string };
 
 export type WSMessageToServer =
   | { type: 'text'; text: string }
   | { type: 'desired_emotion'; emotion: string }
-  | { type: 'end_session' };
+  | { type: 'end_session' }
+  | { type: 'barge_in' };
 
 export interface BreathingPattern {
   technique: 'box' | 'calm' | 'sigh';

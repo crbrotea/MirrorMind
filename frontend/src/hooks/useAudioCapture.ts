@@ -5,7 +5,7 @@ import { SAMPLE_RATE_CAPTURE } from '@/lib/constants';
 import type { AudioCaptureReturn } from '@/types';
 
 interface UseAudioCaptureOptions {
-  onChunk: (chunk: ArrayBuffer) => void;
+  onChunk: (chunk: ArrayBuffer, rmsEnergy: number) => void;
 }
 
 export function useAudioCapture({ onChunk }: UseAudioCaptureOptions): AudioCaptureReturn {
@@ -47,7 +47,10 @@ export function useAudioCapture({ onChunk }: UseAudioCaptureOptions): AudioCaptu
 
       workletNode.port.onmessage = (event: MessageEvent) => {
         if (event.data.type === 'pcm-chunk') {
-          onChunkRef.current(event.data.samples as ArrayBuffer);
+          onChunkRef.current(
+            event.data.samples as ArrayBuffer,
+            (event.data.rmsEnergy as number) ?? 0,
+          );
         }
       };
 
