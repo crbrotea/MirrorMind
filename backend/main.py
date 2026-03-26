@@ -535,8 +535,22 @@ async def _send_json(ws: WebSocket, data: dict) -> None:
 # ---------------------------------------------------------------------------
 # Clerk JWT auth dependency for REST endpoints
 # ---------------------------------------------------------------------------
-async def get_authenticated_user(authorization: str = Header(None)) -> str:
-    """Extract and verify Clerk JWT from Authorization header."""
+async def get_authenticated_user(
+    request: Request,
+    authorization: str = Header(None),
+) -> str:
+    """Extract and verify Clerk JWT from Authorization header.
+
+    In TEST_MODE, returns the user_id from the URL path to allow tests
+    to exercise gallery endpoints without real Clerk tokens.
+    """
+    if TEST_MODE:
+        # Extract user_id from path for test mode
+        parts = request.url.path.strip("/").split("/")
+        # /api/gallery/{user_id}[/{gallery_id}]
+        if len(parts) >= 3:
+            return parts[2]
+        return "test-user"
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
     token = authorization.removeprefix("Bearer ").strip()
