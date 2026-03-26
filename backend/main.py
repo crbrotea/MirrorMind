@@ -23,7 +23,7 @@ from collections import defaultdict
 from typing import Literal
 
 import uvicorn
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -31,6 +31,7 @@ from pydantic import BaseModel, Field, ValidationError
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from mirror_mind.auth import verify_clerk_token
 from google.adk.agents import LiveRequestQueue
 from google.adk.runners import InMemoryRunner
 from google.adk.agents.run_config import RunConfig
@@ -184,6 +185,24 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
     if TEST_MODE:
         from mirror_mind.test_fixtures import run_mock_session
         await run_mock_session(ws, user_id)
+        return
+
+    # --- Clerk JWT verification ---
+    token = ws.query_params.get("token")
+    if not token:
+        await ws.accept()
+        await ws.close(code=1008, reason="Missing authentication token")
+        return
+
+    verified_user_id = await verify_clerk_token(token)
+    if verified_user_id is None:
+        await ws.accept()
+        await ws.close(code=1008, reason="Invalid authentication token")
+        return
+
+    if verified_user_id != user_id:
+        await ws.accept()
+        await ws.close(code=1008, reason="User ID mismatch")
         return
 
     # Per-IP connection limit (SEC-05)
@@ -514,12 +533,32 @@ async def _send_json(ws: WebSocket, data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Clerk JWT auth dependency for REST endpoints
+# ---------------------------------------------------------------------------
+async def get_authenticated_user(authorization: str = Header(None)) -> str:
+    """Extract and verify Clerk JWT from Authorization header."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    token = authorization.removeprefix("Bearer ").strip()
+    user_id = await verify_clerk_token(token)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return user_id
+
+
+# ---------------------------------------------------------------------------
 # Gallery REST endpoints (for frontend to fetch past sessions)
 # ---------------------------------------------------------------------------
 @app.get("/api/gallery/{user_id}")
 @limiter.limit("20/minute")
-async def get_user_gallery(request: Request, user_id: str) -> JSONResponse:
+async def get_user_gallery(
+    request: Request,
+    user_id: str,
+    authenticated_user: str = Depends(get_authenticated_user),
+) -> JSONResponse:
     """Get all gallery entries for a user."""
+    if authenticated_user != user_id:
+        return JSONResponse(status_code=403, content={"error": "Forbidden"})
     from mirror_mind.gallery_service import get_gallery
     entries = await get_gallery(user_id)
     return JSONResponse(content={"gallery": entries})
@@ -527,8 +566,15 @@ async def get_user_gallery(request: Request, user_id: str) -> JSONResponse:
 
 @app.get("/api/gallery/{user_id}/{gallery_id}")
 @limiter.limit("20/minute")
-async def get_gallery_detail(request: Request, user_id: str, gallery_id: str) -> JSONResponse:
+async def get_gallery_detail(
+    request: Request,
+    user_id: str,
+    gallery_id: str,
+    authenticated_user: str = Depends(get_authenticated_user),
+) -> JSONResponse:
     """Get full detail for a specific gallery entry."""
+    if authenticated_user != user_id:
+        return JSONResponse(status_code=403, content={"error": "Forbidden"})
     from mirror_mind.gallery_service import get_session_detail
     detail = await get_session_detail(gallery_id)
     if detail is None:
