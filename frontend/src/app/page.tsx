@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { Show, UserButton } from '@clerk/nextjs';
 
 export default function LandingPage() {
   return (
@@ -22,6 +23,13 @@ export default function LandingPage() {
           style={{ animationDelay: '-10s' }}
         />
       </div>
+
+      {/* User menu */}
+      <Show when="signed-in">
+        <div className="absolute top-6 right-6 z-10">
+          <UserButton />
+        </div>
+      </Show>
 
       {/* Content */}
       <div className="flex flex-col items-center text-center animate-float-up">
@@ -54,21 +62,33 @@ export default function LandingPage() {
         </p>
 
         {/* CTA */}
-        <Link
-          href="/session"
-          className="group relative overflow-hidden rounded-full border border-white/15 bg-white/10 px-10 py-3.5 text-sm font-medium tracking-wide text-white/90 backdrop-blur-md transition-all duration-300 hover:bg-white/15 hover:border-white/25 hover:shadow-[0_0_30px_rgba(255,255,255,0.08)]"
-        >
-          <span className="relative z-10">Comenzar</span>
-          <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] transition-transform duration-700 group-hover:translate-x-[200%]" />
-        </Link>
+        <Show when="signed-in">
+          <Link
+            href="/session"
+            className="group relative overflow-hidden rounded-full border border-white/15 bg-white/10 px-10 py-3.5 text-sm font-medium tracking-wide text-white/90 backdrop-blur-md transition-all duration-300 hover:bg-white/15 hover:border-white/25 hover:shadow-[0_0_30px_rgba(255,255,255,0.08)]"
+          >
+            <span className="relative z-10">Comenzar</span>
+            <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] transition-transform duration-700 group-hover:translate-x-[200%]" />
+          </Link>
 
-        {/* Gallery link */}
-        <Link
-          href="/gallery"
-          className="mt-6 text-xs text-white/25 transition-colors hover:text-white/45"
-        >
-          Ver galería de sesiones
-        </Link>
+          {/* Gallery link */}
+          <Link
+            href="/gallery"
+            className="mt-6 text-xs text-white/25 transition-colors hover:text-white/45"
+          >
+            Ver galería de sesiones
+          </Link>
+        </Show>
+
+        <Show when="signed-out">
+          <Link
+            href="/sign-in"
+            className="group relative overflow-hidden rounded-full border border-white/15 bg-white/10 px-10 py-3.5 text-sm font-medium tracking-wide text-white/90 backdrop-blur-md transition-all duration-300 hover:bg-white/15 hover:border-white/25 hover:shadow-[0_0_30px_rgba(255,255,255,0.08)]"
+          >
+            <span className="relative z-10">Iniciar sesion</span>
+            <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] transition-transform duration-700 group-hover:translate-x-[200%]" />
+          </Link>
+        </Show>
       </div>
 
       {/* Bottom subtle text */}

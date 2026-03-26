@@ -29,7 +29,7 @@ const INITIAL_STATE: MirrorState = {
   agentSpeaking: false,
 };
 
-export function useMirrorMind() {
+export function useMirrorMind(userId: string, getToken: () => Promise<string | null>) {
   const [state, setState] = useState<MirrorState>(INITIAL_STATE);
   const wsRef = useRef<MirrorWebSocket | null>(null);
 
@@ -181,7 +181,7 @@ export function useMirrorMind() {
     [playChunk]
   );
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (wsRef.current) {
       wsRef.current.disconnect();
     }
@@ -198,14 +198,9 @@ export function useMirrorMind() {
     });
 
     wsRef.current = ws;
-    // Persist user_id in localStorage so gallery works across sessions
-    let userId = localStorage.getItem('mirrormind_user_id');
-    if (!userId) {
-      userId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-      localStorage.setItem('mirrormind_user_id', userId);
-    }
-    ws.connect(`${WS_URL}/${userId}`);
-  }, [handleTextMessage, handleBinaryMessage]);
+    const token = await getToken();
+    ws.connect(`${WS_URL}/${userId}?token=${encodeURIComponent(token ?? '')}`);
+  }, [handleTextMessage, handleBinaryMessage, userId, getToken]);
 
   const disconnect = useCallback(() => {
     stopCapture();

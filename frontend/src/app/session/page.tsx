@@ -9,9 +9,12 @@ import EmotionIndicator from '@/components/EmotionIndicator';
 import TranscriptOverlay from '@/components/TranscriptOverlay';
 import BreathingGuide from '@/components/BreathingGuide';
 import VoiceControls from '@/components/VoiceControls';
+import { useUser, useAuth } from '@clerk/nextjs';
 
 export default function SessionPage() {
   const router = useRouter();
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const {
     state,
     captureError,
@@ -20,12 +23,13 @@ export default function SessionPage() {
     startListening,
     stopListening,
     endSession,
-  } = useMirrorMind();
+  } = useMirrorMind(user?.id ?? '', getToken);
 
   const [isInitializing, setIsInitializing] = useState(true);
 
   // Connect on mount
   useEffect(() => {
+    if (!isLoaded || !user) return;
     connect();
     const timer = setTimeout(() => setIsInitializing(false), 1500);
     return () => {
@@ -33,7 +37,7 @@ export default function SessionPage() {
       disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isLoaded, user]);
 
   const handleEndSession = useCallback(() => {
     endSession();

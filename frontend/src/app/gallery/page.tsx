@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useUser, useAuth } from '@clerk/nextjs';
 import GalleryGrid from '@/components/GalleryGrid';
 import type { GalleryEntry } from '@/types';
 
@@ -10,19 +11,26 @@ const API_BASE = process.env.NEXT_PUBLIC_WS_URL
   : 'http://localhost:8080';
 
 export default function GalleryPage() {
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const [entries, setEntries] = useState<GalleryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userId = localStorage.getItem('mirrormind_user_id');
-    if (!userId) {
-      setLoading(false);
+    if (!isLoaded || !user) {
+      if (isLoaded) setLoading(false);
       return;
     }
 
-    fetch(`${API_BASE}/api/gallery/${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
+    const loadGallery = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_BASE}/api/gallery/${user.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
         const gallery = (data.gallery ?? []).map((entry: Record<string, unknown>) => ({
           sessionId: entry.session_id as string ?? entry.gallery_id as string,
           date: new Date((entry.created_at as number) * 1000).toISOString(),
@@ -36,10 +44,14 @@ export default function GalleryPage() {
           galleryId: entry.gallery_id as string,
         }));
         setEntries(gallery);
-      })
-      .catch((err) => console.error('Failed to load gallery:', err))
-      .finally(() => setLoading(false));
-  }, []);
+      } catch (err) {
+        console.error('Failed to load gallery:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadGallery();
+  }, [isLoaded, user, getToken]);
 
   return (
     <main className="relative min-h-dvh bg-[#0a0a1a] overflow-y-auto">

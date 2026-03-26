@@ -11,6 +11,7 @@
     "test:e2e:ui": "npx playwright test --ui"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.0.7",
     "next": "16.1.7",
     "react": "19.2.3",
     "react-dom": "19.2.3"
