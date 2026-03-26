@@ -15,15 +15,22 @@ Protocol:
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import time
+from collections import defaultdict
+from typing import Literal
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, ValidationError
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from google.adk.agents import LiveRequestQueue
 from google.adk.runners import InMemoryRunner
 from google.adk.agents.run_config import RunConfig
@@ -54,6 +61,49 @@ if not TEST_MODE:
     from mirror_mind.image_service import get_image_queue, remove_image_queue
 
 # ---------------------------------------------------------------------------
+# Security constants
+# ---------------------------------------------------------------------------
+MAX_WS_BINARY_SIZE = 64 * 1024  # 64 KB max for audio frames
+IDLE_TIMEOUT_SECONDS = 10 * 60  # 10 minutes without audio
+MAX_SESSION_DURATION_SECONDS = 60 * 60  # 60 minutes absolute max
+
+# Per-IP WebSocket connection tracking
+_ws_connections_per_ip: dict[str, int] = defaultdict(int)
+MAX_WS_CONNECTIONS_PER_IP = 3
+
+
+# ---------------------------------------------------------------------------
+# Pydantic models for incoming WebSocket JSON messages (SEC-06, SEC-07)
+# ---------------------------------------------------------------------------
+class WsTextMessage(BaseModel):
+    type: Literal["text"]
+    text: str = Field(..., min_length=1, max_length=5000)
+
+
+class WsBargeInMessage(BaseModel):
+    type: Literal["barge_in"]
+
+
+class WsEndSessionMessage(BaseModel):
+    type: Literal["end_session"]
+
+
+# ---------------------------------------------------------------------------
+# Base64 PNG validation helper (SEC-10)
+# ---------------------------------------------------------------------------
+PNG_HEADER = b"\x89PNG\r\n\x1a\n"
+
+
+def validate_base64_png(data: str) -> bool:
+    """Return True if *data* is valid base64 that decodes to a PNG image."""
+    try:
+        raw = base64.b64decode(data, validate=True)
+        return raw[:8] == PNG_HEADER
+    except Exception:
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 logging.basicConfig(
@@ -65,18 +115,31 @@ logger = logging.getLogger("mirrormind")
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Rate limiter (SEC-05)
+# ---------------------------------------------------------------------------
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="MirrorMind API",
     description="Emotional mirror backend - real-time voice analysis and art generation",
     version="0.1.0",
 )
 
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(status_code=429, content={"error": "Rate limit exceeded"})
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
 )
 
 # ---------------------------------------------------------------------------
@@ -94,7 +157,8 @@ else:
 # Health check
 # ---------------------------------------------------------------------------
 @app.get("/health")
-async def health_check() -> JSONResponse:
+@limiter.limit("30/minute")
+async def health_check(request: Request) -> JSONResponse:
     """Health check endpoint for load balancers and Cloud Run."""
     return JSONResponse(
         content={
@@ -122,8 +186,20 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
         await run_mock_session(ws, user_id)
         return
 
+    # Per-IP connection limit (SEC-05)
+    client_ip = ws.client.host if ws.client else "unknown"
+    if _ws_connections_per_ip[client_ip] >= MAX_WS_CONNECTIONS_PER_IP:
+        await ws.accept()
+        await ws.close(code=1008, reason="Too many connections from this IP")
+        return
+    _ws_connections_per_ip[client_ip] += 1
+
     await ws.accept()
     logger.info("WebSocket connected for user %s", user_id)
+
+    # Session timing (SEC-15)
+    session_start_time = time.monotonic()
+    last_audio_time = time.monotonic()
 
     # Create a fresh session
     session = await create_session(user_id)
@@ -160,46 +236,98 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
     # ------------------------------------------------------------------
     async def receive_from_client() -> None:
         """Forward microphone audio and text from the browser to the Live API."""
+        nonlocal last_audio_time
         try:
             while True:
+                # Session timeout checks (SEC-15)
+                now = time.monotonic()
+                if now - last_audio_time > IDLE_TIMEOUT_SECONDS:
+                    logger.info("Idle timeout for user %s", user_id)
+                    await _send_json(ws, {
+                        "type": "error",
+                        "code": "idle_timeout",
+                        "message": "Session closed due to inactivity",
+                    })
+                    break
+                if now - session_start_time > MAX_SESSION_DURATION_SECONDS:
+                    logger.info("Max session duration reached for user %s", user_id)
+                    await _send_json(ws, {
+                        "type": "error",
+                        "code": "max_duration",
+                        "message": "Maximum session duration reached",
+                    })
+                    break
+
                 message = await ws.receive()
 
                 if message.get("type") == "websocket.disconnect":
                     break
 
                 if "bytes" in message and message["bytes"]:
+                    raw_bytes = message["bytes"]
+                    # Enforce binary frame size limit (SEC-06)
+                    if len(raw_bytes) > MAX_WS_BINARY_SIZE:
+                        logger.warning(
+                            "Oversized binary frame (%d bytes) from user %s, dropping",
+                            len(raw_bytes),
+                            user_id,
+                        )
+                        continue
+
                     # PCM audio chunk from browser mic (Int16, 16kHz mono)
                     audio_blob = types.Blob(
                         mime_type="audio/pcm",
-                        data=message["bytes"],
+                        data=raw_bytes,
                     )
                     live_queue.send_realtime(audio_blob)
+                    last_audio_time = time.monotonic()
                     await update_activity(user_id)
 
                 elif "text" in message and message["text"]:
+                    raw_text = message["text"]
+                    # Limit raw JSON text size to 16 KB
+                    if len(raw_text) > 16 * 1024:
+                        logger.warning("Oversized text frame from user %s, dropping", user_id)
+                        continue
+
                     try:
-                        data = json.loads(message["text"])
+                        data = json.loads(raw_text)
                     except json.JSONDecodeError:
                         continue
 
                     msg_type = data.get("type", "")
 
+                    # Validate against Pydantic schemas (SEC-07)
                     if msg_type == "text":
-                        # Text message from the user (typed input)
+                        try:
+                            validated = WsTextMessage(**data)
+                        except ValidationError:
+                            logger.warning("Invalid text message from user %s", user_id)
+                            continue
                         content = types.Content(
-                            parts=[types.Part(text=data.get("text", ""))]
+                            parts=[types.Part(text=validated.text)]
                         )
                         live_queue.send_content(content)
 
                     elif msg_type == "barge_in":
+                        try:
+                            WsBargeInMessage(**data)
+                        except ValidationError:
+                            continue
                         # User interrupted the agent — frontend already
                         # stopped playback; Gemini will handle the new
                         # audio input natively.
                         logger.info("Barge-in from user %s", user_id)
 
                     elif msg_type == "end_session":
+                        try:
+                            WsEndSessionMessage(**data)
+                        except ValidationError:
+                            continue
                         # Client requests to end the session
                         break
+                    else:
+                        logger.warning("Unknown message type '%s' from user %s", msg_type, user_id)
 
         except WebSocketDisconnect:
             logger.info("Client disconnected (receive loop): %s", user_id)
@@ -289,6 +417,11 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
                     break
                 try:
                     image_msg = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    # Validate base64 PNG before sending to client (SEC-10)
+                    img_data = image_msg.get("data", "")
+                    if img_data and not validate_base64_png(img_data):
+                        logger.warning("Invalid PNG data for user %s, skipping", user_id)
+                        continue
                     await _send_json(ws, image_msg)
                     await record_image_generated(user_id)
                     # Store for gallery persistence
@@ -315,6 +448,11 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
             return_exceptions=True,
         )
     finally:
+        # Decrement per-IP connection counter
+        _ws_connections_per_ip[client_ip] = max(0, _ws_connections_per_ip[client_ip] - 1)
+        if _ws_connections_per_ip[client_ip] == 0:
+            _ws_connections_per_ip.pop(client_ip, None)
+
         # Session cleanup
         logger.info("Cleaning up session for user %s", user_id)
 
@@ -379,7 +517,8 @@ async def _send_json(ws: WebSocket, data: dict) -> None:
 # Gallery REST endpoints (for frontend to fetch past sessions)
 # ---------------------------------------------------------------------------
 @app.get("/api/gallery/{user_id}")
-async def get_user_gallery(user_id: str) -> JSONResponse:
+@limiter.limit("20/minute")
+async def get_user_gallery(request: Request, user_id: str) -> JSONResponse:
     """Get all gallery entries for a user."""
     from mirror_mind.gallery_service import get_gallery
     entries = await get_gallery(user_id)
@@ -387,7 +526,8 @@ async def get_user_gallery(user_id: str) -> JSONResponse:
 
 
 @app.get("/api/gallery/{user_id}/{gallery_id}")
-async def get_gallery_detail(user_id: str, gallery_id: str) -> JSONResponse:
+@limiter.limit("20/minute")
+async def get_gallery_detail(request: Request, user_id: str, gallery_id: str) -> JSONResponse:
     """Get full detail for a specific gallery entry."""
     from mirror_mind.gallery_service import get_session_detail
     detail = await get_session_detail(gallery_id)

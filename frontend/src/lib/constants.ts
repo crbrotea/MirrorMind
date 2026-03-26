@@ -66,10 +66,30 @@ export const EMOTION_DISPLAY_NAMES: Record<string, string> = {
 
 export const STAGE_ORDER = ['welcome', 'mirror', 'shift', 'arrive', 'complete'] as const;
 
-export const WS_URL =
-  typeof window !== 'undefined'
-    ? (process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8080/ws')
-    : 'ws://localhost:8080/ws';
+// SEC-12: Enforce secure WebSocket in production (non-localhost)
+function resolveWsUrl(): string {
+  const raw =
+    typeof window !== 'undefined'
+      ? (process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:8080/ws')
+      : 'ws://localhost:8080/ws';
+
+  if (typeof window !== 'undefined') {
+    const isLocalhost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '0.0.0.0';
+    if (!isLocalhost && raw.startsWith('ws://')) {
+      console.error(
+        '[MirrorMind Security] Insecure WebSocket (ws://) detected in a non-localhost environment. ' +
+          'Use wss:// in production to protect data in transit. Upgrading to wss://.',
+      );
+      return raw.replace('ws://', 'wss://');
+    }
+  }
+  return raw;
+}
+
+export const WS_URL = resolveWsUrl();
 
 export const SAMPLE_RATE_CAPTURE = 16000;
 export const SAMPLE_RATE_PLAYBACK = 24000;

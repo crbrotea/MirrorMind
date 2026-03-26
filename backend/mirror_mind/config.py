@@ -46,7 +46,10 @@ CORS_ORIGINS: list[str] = [
     ).split(",")
     if origin.strip()
 ]
-LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+# Default to WARNING in production (non-localhost), INFO for local development
+_is_local = HOST in ("localhost", "127.0.0.1", "0.0.0.0")
+_default_log_level = "INFO" if _is_local else "WARNING"
+LOG_LEVEL: str = os.getenv("LOG_LEVEL", _default_log_level)
 
 # ---------------------------------------------------------------------------
 # Audio settings
