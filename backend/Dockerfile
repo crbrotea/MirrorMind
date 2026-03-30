@@ -11,10 +11,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends gcc && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy dependency definition and install
-COPY pyproject.toml .
+# Copy pinned dependencies and install (fast, no backtracking)
+COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY main.py .
