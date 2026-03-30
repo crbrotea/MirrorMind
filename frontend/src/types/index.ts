@@ -77,3 +77,20 @@ export interface WebSocketClient {
   sendJSON: (data: WSMessageToServer) => void;
   isConnected: boolean;
 }
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  image_url: string | null;
+  points: number;
+  role: string;
+  created_at: number;
+  last_sign_in_at: number | null;
+}
+
+export interface UserPoints {
+  points: number;
+  user_id: string;
+}

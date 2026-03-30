@@ -66,6 +66,10 @@ export const EMOTION_DISPLAY_NAMES: Record<string, string> = {
 
 export const STAGE_ORDER = ['welcome', 'mirror', 'shift', 'arrive', 'complete'] as const;
 
+// API base URL for REST endpoints
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+
 // SEC-12: Enforce secure WebSocket in production (non-localhost)
 function resolveWsUrl(): string {
   const raw =

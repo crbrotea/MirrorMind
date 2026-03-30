@@ -26,10 +26,17 @@ export default function SessionPage() {
   } = useMirrorMind(user?.id ?? '', getToken);
 
   const [isInitializing, setIsInitializing] = useState(true);
+  const [noPoints, setNoPoints] = useState(false);
+  const userPoints = (user?.publicMetadata?.points as number | undefined) ?? 0;
 
-  // Connect on mount
+  // Connect on mount (only if user has points)
   useEffect(() => {
     if (!isLoaded || !user) return;
+    if (userPoints <= 0) {
+      setNoPoints(true);
+      setIsInitializing(false);
+      return;
+    }
     connect();
     const timer = setTimeout(() => setIsInitializing(false), 1500);
     return () => {
@@ -53,6 +60,33 @@ export default function SessionPage() {
   const handleStopListening = useCallback(() => {
     stopListening();
   }, [stopListening]);
+
+  // No points available
+  if (noPoints) {
+    return (
+      <main className="relative flex min-h-dvh items-center justify-center bg-[#0a0a1a]">
+        <div className="flex flex-col items-center gap-6 px-6 text-center animate-float-up">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-7 w-7 text-white/50">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-light text-white/90">Sin sesiones disponibles</h2>
+          <p className="max-w-xs text-sm text-white/40">
+            No tienes puntos disponibles para iniciar una sesión. Contacta al administrador para obtener más.
+          </p>
+          <button
+            onClick={() => router.push('/')}
+            className="rounded-full bg-white/10 px-6 py-2.5 text-sm text-white/80 border border-white/10 transition-colors hover:bg-white/15"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   // Loading state
   if (isInitializing) {

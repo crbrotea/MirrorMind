@@ -139,7 +139,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "Accept"],
 )
 
@@ -203,6 +203,21 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
     if verified_user_id != user_id:
         await ws.accept()
         await ws.close(code=1008, reason="User ID mismatch")
+        return
+
+    # --- Points verification (query Clerk API as source of truth) ---
+    from mirror_mind.clerk_service import get_user_points, update_user_points
+    try:
+        user_points = await get_user_points(verified_user_id)
+    except Exception as e:
+        logger.error("Failed to check points for %s: %s", user_id, e)
+        await ws.accept()
+        await ws.close(code=1011, reason="Could not verify points")
+        return
+
+    if user_points <= 0:
+        await ws.accept()
+        await ws.close(code=4003, reason="No points available")
         return
 
     # Per-IP connection limit (SEC-05)
@@ -510,6 +525,15 @@ async def websocket_endpoint(ws: WebSocket, user_id: str) -> None:
             except Exception as e:
                 logger.error("Failed to save gallery for %s: %s", user_id, e)
 
+        # Deduct 1 point after session completes
+        try:
+            current_points = await get_user_points(user_id)
+            if current_points > 0:
+                await update_user_points(user_id, current_points - 1)
+                logger.info("Deducted 1 point for user %s (remaining: %d)", user_id, current_points - 1)
+        except Exception as e:
+            logger.error("Failed to deduct point for %s: %s", user_id, e)
+
         await close_session(user_id)
         remove_image_queue(user_id)
 
@@ -594,6 +618,106 @@ async def get_gallery_detail(
     if detail is None:
         return JSONResponse(status_code=404, content={"error": "Session not found"})
     return JSONResponse(content=detail)
+
+
+# ---------------------------------------------------------------------------
+# Points REST endpoints
+# ---------------------------------------------------------------------------
+@app.get("/api/user/points")
+@limiter.limit("30/minute")
+async def get_my_points(
+    request: Request,
+    authenticated_user: str = Depends(get_authenticated_user),
+) -> JSONResponse:
+    """Get the authenticated user's point balance."""
+    from mirror_mind.clerk_service import get_user_points
+    points = await get_user_points(authenticated_user)
+    return JSONResponse(content={"points": points, "user_id": authenticated_user})
+
+
+# ---------------------------------------------------------------------------
+# Admin REST endpoints
+# ---------------------------------------------------------------------------
+async def require_admin(
+    request: Request,
+    authenticated_user: str = Depends(get_authenticated_user),
+) -> str:
+    """Dependency that verifies the user has admin role."""
+    from mirror_mind.clerk_service import get_user_role
+    role = await get_user_role(authenticated_user)
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return authenticated_user
+
+
+@app.get("/api/admin/users")
+@limiter.limit("10/minute")
+async def list_users(
+    request: Request,
+    limit: int = 100,
+    offset: int = 0,
+    admin_user: str = Depends(require_admin),
+) -> JSONResponse:
+    """Admin: list all users with their points and metadata."""
+    from mirror_mind.clerk_service import list_all_users
+    users = await list_all_users(limit=limit, offset=offset)
+    return JSONResponse(content={"users": users})
+
+
+class UpdatePointsRequest(BaseModel):
+    points: int = Field(..., ge=0, le=10000)
+
+
+@app.patch("/api/admin/users/{user_id}/points")
+@limiter.limit("30/minute")
+async def admin_update_points(
+    request: Request,
+    user_id: str,
+    body: UpdatePointsRequest,
+    admin_user: str = Depends(require_admin),
+) -> JSONResponse:
+    """Admin: set points for a specific user."""
+    from mirror_mind.clerk_service import update_user_points
+    await update_user_points(user_id, body.points)
+    return JSONResponse(content={"user_id": user_id, "points": body.points})
+
+
+# ---------------------------------------------------------------------------
+# Clerk Webhook (assigns initial points on user.created)
+# ---------------------------------------------------------------------------
+@app.post("/api/clerk/webhook")
+async def clerk_webhook(request: Request) -> JSONResponse:
+    """Handle Clerk webhook events. Assigns 2 points to new users."""
+    from mirror_mind.config import CLERK_WEBHOOK_SECRET
+    from svix.webhooks import Webhook, WebhookVerificationError
+
+    body = await request.body()
+    headers = dict(request.headers)
+
+    if CLERK_WEBHOOK_SECRET:
+        try:
+            wh = Webhook(CLERK_WEBHOOK_SECRET)
+            payload = wh.verify(body, headers)
+        except WebhookVerificationError:
+            logger.warning("Clerk webhook signature verification failed")
+            return JSONResponse(status_code=400, content={"error": "Invalid signature"})
+    else:
+        import json as _json
+        payload = _json.loads(body)
+        logger.warning("Clerk webhook signature not verified (CLERK_WEBHOOK_SECRET not set)")
+
+    event_type = payload.get("type")
+    if event_type == "user.created":
+        user_id = payload.get("data", {}).get("id")
+        if user_id:
+            from mirror_mind.clerk_service import update_user_points
+            try:
+                await update_user_points(user_id, 2)
+                logger.info("Assigned 2 initial points to new user %s", user_id)
+            except Exception as e:
+                logger.error("Failed to assign initial points to %s: %s", user_id, e)
+
+    return JSONResponse(content={"received": True})
 
 
 # ---------------------------------------------------------------------------

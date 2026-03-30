@@ -77,3 +77,5 @@ IMAGE_SIZE: str = "1K"
 # Clerk authentication
 # ---------------------------------------------------------------------------
 CLERK_JWKS_URL: str = os.getenv("CLERK_JWKS_URL", "")
+CLERK_SECRET_KEY: str = os.getenv("CLERK_SECRET_KEY", "")
+CLERK_WEBHOOK_SECRET: str = os.getenv("CLERK_WEBHOOK_SECRET", "")

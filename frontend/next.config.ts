@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://img.clerk.com",
               "media-src 'self' blob:",
-              "connect-src 'self' ws://localhost:* wss://*.run.app wss://*.vercel.app https://*.clerk.accounts.dev https://*.clerk.com https://api.clerk.com https://challenges.cloudflare.com",
+              "connect-src 'self' http://localhost:* ws://localhost:* wss://*.run.app wss://*.vercel.app https://*.clerk.accounts.dev https://*.clerk.com https://api.clerk.com https://challenges.cloudflare.com",
               "font-src 'self'",
               "frame-src 'self' https://*.clerk.accounts.dev https://challenges.cloudflare.com",
               "worker-src 'self' blob:",

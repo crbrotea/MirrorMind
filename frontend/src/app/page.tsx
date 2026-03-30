@@ -2,7 +2,50 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Show, UserButton } from '@clerk/nextjs';
+import { Show, UserButton, useUser } from '@clerk/nextjs';
+
+function StartSessionButton() {
+  const { user } = useUser();
+  const points = (user?.publicMetadata?.points as number | undefined) ?? 0;
+  if (points <= 0) {
+    return (
+      <span className="rounded-full border border-white/10 bg-white/5 px-10 py-3.5 text-sm font-medium tracking-wide text-white/30 cursor-not-allowed">
+        Sin sesiones disponibles
+      </span>
+    );
+  }
+  return (
+    <Link
+      href="/session"
+      className="group relative overflow-hidden rounded-full border border-white/15 bg-white/10 px-10 py-3.5 text-sm font-medium tracking-wide text-white/90 backdrop-blur-md transition-all duration-300 hover:bg-white/15 hover:border-white/25 hover:shadow-[0_0_30px_rgba(255,255,255,0.08)]"
+    >
+      <span className="relative z-10">Comenzar</span>
+      <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] transition-transform duration-700 group-hover:translate-x-[200%]" />
+    </Link>
+  );
+}
+
+function PointsBadge() {
+  const { user } = useUser();
+  if (!user) return null;
+  const points = (user.publicMetadata?.points as number | undefined) ?? 0;
+  const isAdmin = user.publicMetadata?.role === 'admin';
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-white/40">
+        {points} {points === 1 ? 'sesión disponible' : 'sesiones disponibles'}
+      </span>
+      {isAdmin && (
+        <Link
+          href="/admin"
+          className="text-xs text-indigo-400/60 hover:text-indigo-400/90 transition-colors"
+        >
+          Admin
+        </Link>
+      )}
+    </div>
+  );
+}
 
 export default function LandingPage() {
   return (
@@ -26,7 +69,8 @@ export default function LandingPage() {
 
       {/* User menu */}
       <Show when="signed-in">
-        <div className="absolute top-6 right-6 z-10">
+        <div className="absolute top-6 right-6 z-10 flex items-center gap-4">
+          <PointsBadge />
           <UserButton />
         </div>
       </Show>
@@ -63,13 +107,7 @@ export default function LandingPage() {
 
         {/* CTA */}
         <Show when="signed-in">
-          <Link
-            href="/session"
-            className="group relative overflow-hidden rounded-full border border-white/15 bg-white/10 px-10 py-3.5 text-sm font-medium tracking-wide text-white/90 backdrop-blur-md transition-all duration-300 hover:bg-white/15 hover:border-white/25 hover:shadow-[0_0_30px_rgba(255,255,255,0.08)]"
-          >
-            <span className="relative z-10">Comenzar</span>
-            <div className="absolute inset-0 -z-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-200%] transition-transform duration-700 group-hover:translate-x-[200%]" />
-          </Link>
+          <StartSessionButton />
 
           {/* Gallery link */}
           <Link
